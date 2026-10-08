@@ -1,6 +1,6 @@
 /* =========================================
    Wildness Instinct - 今日指南系统
-   Version: 8.0 - 运动·饮食·睡眠三大板块
+   Version: 8.0 - 运动·营养·睡眠三大板块
    Philosophy: 反脆弱 + 杠铃策略
    ========================================= */
 
@@ -162,10 +162,10 @@ function renderExerciseGuide() {
   container.innerHTML = html;
 }
 
-// 渲染饮食板块
-function renderDietGuide() {
+// 渲染营养板块
+function renderNutritionGuide() {
   const today = new Date();
-  const container = document.getElementById('diet');
+  const container = document.getElementById('nutrition');
   
   if (!container) return;
   
@@ -173,7 +173,7 @@ function renderDietGuide() {
   const dietType = getDietType(today);
   
   let html = `
-    <h3>🌱 饮食</h3>
+    <h3>🌱 营养</h3>
     <div class="core-advice">
       
       <!-- 1. 饮食铁律 -->
@@ -218,7 +218,7 @@ function renderDietGuide() {
       <div class="advice-item">
         <i class="ri-dice-3-line"></i>
         <div class="advice-text">
-          <h4>随机饮食日</h4>
+          <h4>随机营养日</h4>
           <p>今天随机选择：想吃肉就吃肉，想吃素就吃素。听从身体。</p>
         </div>
       </div>
@@ -291,7 +291,7 @@ function renderSleepGuide() {
 function initWildPage() {
   console.log('Initializing Wildness Instinct...');
   renderExerciseGuide();
-  renderDietGuide();
+  renderNutritionGuide();
   renderSleepGuide();
   
   // 方案一：今日计划高亮强调动画（打开网页时强调 5 秒）

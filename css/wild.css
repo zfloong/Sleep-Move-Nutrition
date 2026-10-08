@@ -1,5 +1,5 @@
 /* =========================================
-   Wildness Instinct - 运动·饮食·睡眠三列布局
+   Wildness Instinct - 运动·营养·睡眠三列布局
    Layout: 3-Column Dense Grid (三大板块)
    Theme: High Information Density
    ========================================= */
@@ -88,8 +88,8 @@
     grid-row: 2 / 3;
 }
 
-/* --- 饮食板块 (右侧列) --- */
-.diet-card {
+/* --- 营养板块 (右侧列) --- */
+.nutrition-card {
     grid-column: 3 / 4;
     grid-row: 2 / 3;
 }
@@ -177,7 +177,7 @@
     animation-delay: 0.3s;
 }
 
-.diet-card {
+.nutrition-card {
     animation-delay: 1.3s;
 }
 
@@ -297,26 +297,26 @@
 
 /* --- 滚动条样式 --- */
 .exercise-card::-webkit-scrollbar,
-.diet-card::-webkit-scrollbar,
+.nutrition-card::-webkit-scrollbar,
 .sleep-card::-webkit-scrollbar {
     width: 6px;
 }
 
 .exercise-card::-webkit-scrollbar-track,
-.diet-card::-webkit-scrollbar-track,
+.nutrition-card::-webkit-scrollbar-track,
 .sleep-card::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.01);
 }
 
 .exercise-card::-webkit-scrollbar-thumb,
-.diet-card::-webkit-scrollbar-thumb,
+.nutrition-card::-webkit-scrollbar-thumb,
 .sleep-card::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 3px;
 }
 
 .exercise-card::-webkit-scrollbar-thumb:hover,
-.diet-card::-webkit-scrollbar-thumb:hover,
+.nutrition-card::-webkit-scrollbar-thumb:hover,
 .sleep-card::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
@@ -335,7 +335,7 @@
     }
     
     .exercise-card,
-    .diet-card,
+    .nutrition-card,
     .sleep-card {
         grid-column: 1 / -1;
         grid-row: auto;
