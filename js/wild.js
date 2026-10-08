@@ -127,26 +127,6 @@ function renderExerciseGuide() {
   let html = `
     <h3>🏃 运动</h3>
     <div class="core-advice">
-      <div class="advice-item">
-        <i class="ri-footprint-line"></i>
-        <div class="advice-text">
-          <h4>每日漫步</h4>
-          <p>每天漫步 1-2 小时，模拟原始人类的平静采集日</p>
-        </div>
-      </div>
-      
-      <div class="divider"></div>
-      
-      <div class="advice-item">
-        <i class="ri-book-open-line"></i>
-        <div class="advice-text">
-          <h4>生命哲思</h4>
-          <p class="quote-text">"${getDailyQuote(today)}"</p>
-        </div>
-      </div>
-      
-      <div class="divider"></div>
-      
       <div class="advice-item today-plan">
         <i class="${todayPlan.icon}"></i>
         <div class="advice-text">
@@ -154,6 +134,26 @@ function renderExerciseGuide() {
           <p><strong>${todayPlan.type}</strong></p>
           <p>${todayPlan.content}</p>
           <p>${todayPlan.note}</p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="advice-item">
+        <i class="ri-book-open-line"></i>
+        <div class="advice-text">
+          <h4>生命哲思</h4>
+          <p class="quote-text">"${getDailyQuote(today)}"</p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="advice-item">
+        <i class="ri-footprint-line"></i>
+        <div class="advice-text">
+          <h4>每日漫步</h4>
+          <p>每天漫步 1-2 小时，模拟原始人类的平静采集日</p>
         </div>
       </div>
     </div>
@@ -181,9 +181,9 @@ function renderDietGuide() {
         <i class="ri-restaurant-line"></i>
         <div class="advice-text">
           <h4>饮食铁律</h4>
-          <p><strong>不吃人类发明食物</strong> - 只吃天然、未加工的传统食物。</p>
+          <p><strong>不吃超加工食品</strong> - 只吃天然、未加工的传统食物。</p>
           <p><strong>只喝千年饮品</strong> - 水、咖啡、茶。</p>
-          <p><strong>去除毒素</strong> - 糖、超加工食品、种子油。</p>
+          <p><strong>去除毒素</strong> - 多糖、重盐、种子油。</p>
         </div>
       </div>
       
@@ -275,11 +275,10 @@ function renderSleepGuide() {
       <div class="advice-item">
         <i class="ri-refresh-line"></i>
         <div class="advice-text">
-          <h4>越挫越强</h4>
+          <h4>接受偶发剥夺</h4>
           <p>偶发失眠是系统抗干扰训练。只要白天不大量补睡，身体自我恢复后，未来睡眠反而更稳定。</p>
         </div>
       </div>
-      
     </div>
   `;
   
