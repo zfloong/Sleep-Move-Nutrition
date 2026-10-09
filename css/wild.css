@@ -1,13 +1,13 @@
 /* =========================================
    Wildness Instinct - 运动·营养·睡眠三列布局
-   v12: 文字即光（零背景光源）+ 三大板块
+   v13: 暗调影像幕布（模糊+重黑遮罩）+ 文字即光 + 三大板块
    缓动纪律: 入场 (0.32,0.72,0,1) / 小位移 (0.25,1,0.5,1) / in-out (0.77,0,0.175,1)
    ========================================= */
 
 /* ============================================================
    开场白 Intro Overlay
-   文字即光: 背景纯黑零光源，唯一的光由文字自身发出——
-   每句浮现瞬间带一次辉光爆发，随即收束归于平静，字熄光熄。
+   影像幕布: 暗调波形图重度模糊、重黑遮罩压到只见肌理，
+   幕随开场淡出露出纯黑主页；唯一清晰的是文字自身发出的光。
    ============================================================ */
 .intro-overlay {
     position: fixed;
@@ -17,7 +17,8 @@
     place-items: center;
     overflow: hidden;
     background: #050507;
-    transition: opacity 0.45s cubic-bezier(0.77, 0, 0.175, 1);
+    transition: opacity 0.45s cubic-bezier(0.77, 0, 0.175, 1),
+                visibility 0s linear 0.45s;
     /* 纯 CSS 兜底：若 JS 异常未收场，开场自终，防止黑幕锁死 */
     animation: introFailsafe 0.45s linear 5.4s forwards;
 }
@@ -26,16 +27,40 @@
     to { opacity: 0; visibility: hidden; }
 }
 
+/* 影像层：向外出血 6% 隐藏模糊边缘，淡入兜底图片晚到 */
+.intro-overlay::before {
+    content: "";
+    position: absolute;
+    inset: -6%;
+    z-index: 0;
+    background:
+        linear-gradient(180deg,
+            rgba(5, 5, 7, 0.88) 0%,
+            rgba(5, 5, 7, 0.80) 42%,
+            rgba(5, 5, 7, 0.90) 100%),
+        url("../assets/intro-bg.webp") center / cover no-repeat;
+    filter: blur(22px) brightness(0.92) saturate(0.90);
+    transform: scale(1.05);
+    opacity: 0;
+    animation: bgReveal 1.4s cubic-bezier(0.32, 0.72, 0, 1) 0.15s forwards;
+}
+
+@keyframes bgReveal {
+    to { opacity: 1; }
+}
+
 .intro-overlay.hide {
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
 }
 
-/* 2.5% 静态胶片颗粒：纯黑底的唯一质感来源，隐约可感不可察 */
+/* 2.5% 静态胶片颗粒：压在影像之上，增加胶片质感 */
 .intro-overlay::after {
     content: "";
     position: absolute;
     inset: 0;
+    z-index: 2;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     opacity: 0.025;
     pointer-events: none;
@@ -45,6 +70,7 @@
 .intro-lines {
     position: absolute;
     inset: 0;
+    z-index: 1;
     display: grid;
     place-items: center;
 }
@@ -54,7 +80,7 @@
     margin: 0;
     padding: 0 clamp(18px, 5vw, 48px);
     text-align: center;
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Times New Roman', serif;
     font-weight: 400;
     font-size: clamp(1.7rem, 3.6vw, 2.6rem);
     letter-spacing: 0.01em;
@@ -153,7 +179,7 @@ body.ready .nutrition-card { animation-delay: 0.34s; }
 }
 
 .section-en {
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Times New Roman', serif;
     font-style: italic;
     color: rgba(212, 175, 55, 0.5);
     font-size: 0.82rem;
@@ -333,5 +359,13 @@ body.ready .nutrition-card { animation-delay: 0.34s; }
     .nutrition-card,
     .sleep-card {
         grid-column: 1 / -1;
+    }
+}
+
+/* --- 竖屏开场白：亮脊在竖裁中出画，平移取景让它回到右上；小屏降 blur 省光栅 --- */
+@media (max-width: 768px) {
+    .intro-overlay::before {
+        background-position: 62% 38%;
+        filter: blur(14px) brightness(0.92) saturate(0.90);
     }
 }
