@@ -86,9 +86,6 @@ function initIntro() {
     setTimeout(() => overlay.remove(), 600);
   };
 
-  // 减少动态偏好：直接进主页
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { finish(); return; }
-
   // 狂草标题逐字落笔（在三句哲思之后）
   const title = document.getElementById('introTitle');
   if (title) {
@@ -111,7 +108,7 @@ function initIntro() {
 
 function initEmbers() {
   const c = document.getElementById('emberCanvas');
-  if (!c || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!c) return;
   const ctx = c.getContext('2d');
   let W, H;
   const parts = [];
