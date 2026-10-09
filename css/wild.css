@@ -1,6 +1,6 @@
 /* =========================================
    Wildness Instinct - 运动·营养·睡眠三列布局
-   v10: 开场白（三句哲思 + 狂草标题）+ 三大板块
+   v10: 开场白（三句哲思）+ 三大板块
    ========================================= */
 
 /* ============================================================
@@ -62,51 +62,6 @@
     100% { opacity: 0; transform: translateY(-10px); }
 }
 
-/* 狂草标题落笔 */
-.intro-title {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    margin: 0;
-    font-family: var(--font-brush);
-    font-weight: 400;
-    font-size: clamp(4rem, 13vw, 7.5rem);
-    letter-spacing: 16px;
-    pointer-events: none;
-}
-
-.intro-title .ch {
-    display: inline-block;
-    opacity: 0;
-    background: linear-gradient(120deg, #f6e8a8 0%, #e8c85a 25%, #d4af37 50%, #f9d76a 75%, #c9a227 100%);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation:
-        brushIn 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.15) forwards,
-        goldShimmer 7s linear infinite;
-    /* 每字延迟由 JS 内联写入：4.8s + i * 0.16s */
-}
-
-@keyframes brushIn {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.6) rotate(-12deg);
-        filter: blur(6px);
-    }
-    to {
-        opacity: 1;
-        transform: none;
-        filter: blur(0);
-    }
-}
-
-@keyframes goldShimmer {
-    to { background-position: 200% center; }
-}
-
 /* 跳过按钮 */
 .intro-skip {
     position: absolute;
@@ -149,33 +104,9 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 15px;
     min-height: 82vh;
-    padding: 15px;
+    padding: 5vh 15px 15px;
     max-width: 1600px;
     margin: 0 auto;
-}
-
-/* 页头：开场结束后只留一行小字，不喧宾夺主 */
-.page-header {
-    text-align: center;
-    padding: 22px 15px 0;
-    opacity: 0;
-}
-
-body.ready .page-header {
-    animation: headerIn 1s ease 0.05s forwards;
-}
-
-@keyframes headerIn {
-    to { opacity: 1; }
-}
-
-.page-title {
-    font-family: var(--font-brush);
-    font-weight: 400;
-    font-size: 1.6rem;
-    letter-spacing: 8px;
-    color: rgba(212, 175, 55, 0.75);
-    margin: 0;
 }
 
 /* --- 通用卡片样式 --- */
@@ -401,13 +332,5 @@ body.ready .nutrition-card { animation-delay: 0.45s; }
     .nutrition-card,
     .sleep-card {
         grid-column: 1 / -1;
-    }
-
-    .page-title {
-        letter-spacing: 5px;
-    }
-
-    .intro-title {
-        letter-spacing: 10px;
     }
 }

@@ -72,7 +72,7 @@ const countHI = (state) => Object.values(state).filter(v => v === 'hi').length;
 
 /* ============================================================
    3. 开场白编排
-   三句哲思逐句浮现 → 狂草标题落笔 → 淡出进入主页
+   三句哲思逐句浮现 → 淡出进入主页
    ============================================================ */
 
 function initIntro() {
@@ -86,20 +86,12 @@ function initIntro() {
     setTimeout(() => overlay.remove(), 600);
   };
 
-  // 狂草标题逐字落笔（在三句哲思之后）
-  const title = document.getElementById('introTitle');
-  if (title) {
-    title.innerHTML = [...title.textContent]
-      .map((c, i) => `<span class="ch" style="animation-delay:${(4.8 + i * 0.16).toFixed(2)}s, 0s">${c}</span>`)
-      .join('');
-  }
-
   // 点击任意处或"跳过"立即结束
   overlay.addEventListener('click', finish);
   document.getElementById('introSkip')?.addEventListener('click', finish);
 
-  // 完整时长：三句(0.4-4.5s) + 标题(4.8-5.5s) + 停留 → 6.8s 收场
-  setTimeout(finish, 6800);
+  // 完整时长：三句(0.4-4.5s) + 静默一拍 → 5.6s 收场
+  setTimeout(finish, 5600);
 }
 
 /* ============================================================
