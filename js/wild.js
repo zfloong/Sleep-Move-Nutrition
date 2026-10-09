@@ -1,68 +1,14 @@
 /* =========================================
    Wildness Instinct - 今日指南系统
-   Version: 8.0 - 运动·营养·睡眠三大板块
-   Philosophy: 反脆弱 + 杠铃策略
+   Version: 9.0 - 施压选择系统 + 烬火粒子
+   Philosophy: 反脆弱 + 杠铃策略 + 听身体
    ========================================= */
 
 /* ============================================================
-   1. 核心配置：三大板块内容
+   1. 内容配置
    ============================================================ */
 
-// 周计划数据（运动板块）
-const WEEKLY_PLAN = [
-  { // 周一 (索引 0)
-    day: '周一',
-    type: '漫步日',
-    content: '漫步 1-2 小时',
-    note: '模拟祖先平静采集日',
-    icon: 'ri-footprint-line'
-  },
-  { // 周二
-    day: '周二',
-    type: '随身体感觉日',
-    content: '心情决定一切',
-    note: '不可预测，防止身体适应平庸',
-    icon: 'ri-emotion-line'
-  },
-  { // 周三
-    day: '周三',
-    type: '高强度锻炼日',
-    content: '漫步 1-2 小时 + 5-15 分钟高强度运动or 400米全力冲刺',
-    note: '极端压力，让身体从尾部事件中变强',
-    icon: 'ri-flashlight-fill'
-  },
-  { // 周四
-    day: '周四',
-    type: '漫步日',
-    content: '漫步 1-2 小时',
-    note: '强调恢复，让身体超补偿',
-    icon: 'ri-footprint-line'
-  },
-  { // 周五
-    day: '周五',
-    type: '随身体感觉日',
-    content: '心情决定一切',
-    note: '不可预测，防止身体适应平庸',
-    icon: 'ri-emotion-line'
-  },
-  { // 周六
-    day: '周六',
-    type: '漫步日',
-    content: '漫步 1-2 小时',
-    note: '周末放松',
-    icon: 'ri-footprint-line'
-  },
-  { // 周日
-    day: '周日',
-    type: '漫步日',
-    content: '漫步 1-2 小时',
-    note: '周末放松',
-    icon: 'ri-footprint-line'
-  }
-];
-
 // 生命哲思语录库（每日轮换）
-// 添加新语录：直接在数组中复制格式添加即可
 const DAILY_QUOTES = [
   '生命需要间歇性剧烈压力，而非绝对稳定。追求恒定只会变脆弱。',
   '史前人类从无"每周三次、定时定量"的机械锻炼日程。',
@@ -78,62 +24,171 @@ const DAILY_QUOTES = [
   '身体的"反脆弱"性，根植于用一次高质量的深度恢复，来响应一次有意义的强烈应激。两者缺一不可。'
 ];
 
-// 根据日期获取语录（每日固定，循环显示）
+// 每周高强度目标
+const HI_WEEKLY_GOAL = 2;
+
 function getDailyQuote(date) {
   const startOfYear = new Date(date.getFullYear(), 0, 0);
   const dayOfYear = Math.floor((date - startOfYear) / (1000 * 60 * 60 * 24));
-  const quoteIndex = dayOfYear % DAILY_QUOTES.length;
-  return DAILY_QUOTES[quoteIndex];
+  return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
 }
 
-// 根据日期获取饮食类型（每日固定，循环显示）
+// 根据日期获取饮食类型（10 天一个周期）
 function getDietType(date) {
-  const dayOfMonth = date.getDate();
-  const cycle = dayOfMonth % 10;  // 10 天一个周期
-  
-  if (cycle < 4) return 'fasting';      // 40% 概率：4 天禁食
-  if (cycle < 6) return 'feast';        // 20% 概率：2 天盛宴
-  if (cycle < 9) return 'plant_based';  // 30% 概率：3 天植物为主
-  return 'random';                      // 10% 概率：1 天随机
+  const cycle = date.getDate() % 10;
+  if (cycle < 4) return 'fasting';
+  if (cycle < 6) return 'feast';
+  if (cycle < 9) return 'plant_based';
+  return 'random';
 }
 
 /* ============================================================
-   2. 随机系统：今日不确定性
+   2. 周状态系统（localStorage，周一自动切换新周期）
+   格式: smn_hi_2026-W41 = {"0":"walk","3":"hi"}  (0=周一 ... 6=周日)
    ============================================================ */
 
-// 获取今日计划（根据周几）
-function getTodayPlan() {
-  const today = new Date();
-  const dayIndex = today.getDay(); // 0=周日，1=周一，..., 6=周六
-  
-  // 转换为数组索引（0=周一，6=周日）
-  const arrayIndex = dayIndex === 0 ? 6 : dayIndex - 1;
-  
-  return WEEKLY_PLAN[arrayIndex];
+const LS_PREFIX = 'smn_hi_';
+
+function getWeekKey(d = new Date()) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const thu = new Date(t);
+  thu.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7) + 3);
+  const first = new Date(Date.UTC(thu.getUTCFullYear(), 0, 4));
+  first.setUTCDate(first.getUTCDate() - ((first.getUTCDay() + 6) % 7) + 3);
+  const wk = 1 + Math.round((thu - first) / (7 * 864e5));
+  return `${thu.getUTCFullYear()}-W${String(wk).padStart(2, '0')}`;
+}
+
+function getWeekState() {
+  try { return JSON.parse(localStorage.getItem(LS_PREFIX + getWeekKey())) || {}; }
+  catch { return {}; }
+}
+
+function saveWeekState(state) {
+  localStorage.setItem(LS_PREFIX + getWeekKey(), JSON.stringify(state));
+}
+
+const countHI = (state) => Object.values(state).filter(v => v === 'hi').length;
+
+/* ============================================================
+   3. 烬火粒子（标题背后的火星）
+   ============================================================ */
+
+function initEmbers() {
+  const c = document.getElementById('emberCanvas');
+  if (!c || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const ctx = c.getContext('2d');
+  let W, H;
+  const parts = [];
+
+  const resize = () => { W = c.width = c.offsetWidth; H = c.height = c.offsetHeight; };
+  resize();
+  addEventListener('resize', resize);
+
+  const spawn = (p = {}) => Object.assign(p, {
+    x: Math.random() * W,
+    y: H * (0.55 + Math.random() * 0.5),
+    r: 0.6 + Math.random() * 1.7,
+    vy: 0.25 + Math.random() * 0.6,
+    ph: Math.random() * Math.PI * 2,
+    sp: 0.008 + Math.random() * 0.02,
+    a: 0.12 + Math.random() * 0.38
+  });
+
+  for (let i = 0; i < 36; i++) parts.push(spawn({ y: Math.random() * H }));
+
+  (function loop() {
+    requestAnimationFrame(loop);
+    if (document.hidden) return;
+    ctx.clearRect(0, 0, W, H);
+    for (const p of parts) {
+      p.y -= p.vy;
+      p.ph += p.sp;
+      p.x += Math.sin(p.ph) * 0.35;
+      const fade = Math.min(1, (p.y / H) * 2.2);
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(240,190,80,${(p.a * fade).toFixed(3)})`;
+      ctx.arc(p.x, p.y, p.r, 0, 7);
+      ctx.fill();
+      if (p.y < H * 0.1 || p.a * fade < 0.02) spawn(p);
+    }
+  })();
 }
 
 /* ============================================================
-   4. UI 渲染系统
+   4. 标题逐字入场
    ============================================================ */
 
-// 渲染今日指南（运动板块）
+function initTitle() {
+  const t = document.getElementById('wildTitle');
+  if (!t) return;
+  t.innerHTML = [...t.textContent].map(c => `<span class="ch">${c}</span>`).join('');
+}
+
+/* ============================================================
+   5. UI 渲染
+   ============================================================ */
+
+let justAchieved = false; // 本次操作是否刚刚达成目标（用于徽章弹出动画）
+
 function renderExerciseGuide() {
-  const today = new Date();
-  const todayPlan = getTodayPlan();
   const container = document.getElementById('exercise');
-  
   if (!container) return;
-  
-  let html = `
-    <h3>🏃 运动</h3>
+
+  const state = getWeekState();
+  const hiCount = countHI(state);
+  const todayIdx = (new Date().getDay() + 6) % 7; // 0=周一
+  const todayChoice = state[todayIdx];
+
+  // 徽章：本周高强度 ≥ 2 次
+  const badge = hiCount >= HI_WEEKLY_GOAL
+    ? `<span class="goal-badge${justAchieved ? ' pop' : ''}"><i class="ri-check-line"></i>本周目标已达成</span>`
+    : '';
+
+  // 今日建议文案（随状态变化）
+  const adviceText =
+    todayChoice === 'hi'   ? '今天已施加压力。剩下的时间交给恢复——漫步、早睡，让超补偿开始。' :
+    todayChoice === 'walk' ? '今天是恢复日。漫步 1-2 小时，平静而悠长，让身体修复。' :
+                             '身体允许，就全力输出 5-15 分钟；不允许，就漫步 1-2 小时。你说了算。';
+
+  // 火焰进度
+  let flames = '';
+  for (let i = 0; i < Math.max(HI_WEEKLY_GOAL, hiCount); i++) {
+    const cls = i < hiCount ? (i >= HI_WEEKLY_GOAL ? 'lit extra' : 'lit') : '';
+    flames += `<i class="ri-fire-${i < hiCount ? 'fill' : 'line'} ${cls}"></i>`;
+  }
+  flames += `<span class="flame-count">${hiCount} / ${HI_WEEKLY_GOAL}${hiCount > HI_WEEKLY_GOAL ? ' · 火力全开' : ''}</span>`;
+
+  container.innerHTML = `
+    <div class="card-head">
+      <h3>🏃 运动 ${badge}</h3>
+      <div class="section-en">Apply the stress.</div>
+    </div>
     <div class="core-advice">
-      <div class="advice-item today-plan">
-        <i class="${todayPlan.icon}"></i>
+
+      <div class="advice-item">
+        <i class="ri-compass-3-line"></i>
         <div class="advice-text">
-          <h4>今日建议（${todayPlan.day}）</h4>
-          <p><strong>${todayPlan.type}</strong></p>
-          <p>${todayPlan.content}</p>
-          <p>${todayPlan.note}</p>
+          <h4>今日 · 身体信号</h4>
+          <p>${adviceText}</p>
+          <div class="today-choice">
+            <button class="choice-btn walk${todayChoice === 'walk' ? ' active-walk' : ''}" data-kind="walk">
+              <i class="ri-footprint-line"></i>漫步日
+            </button>
+            <button class="choice-btn hi${todayChoice === 'hi' ? ' active-hi' : ''}" data-kind="hi">
+              <i class="ri-fire-line"></i>高强度日
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="advice-item">
+        <i class="ri-fire-line"></i>
+        <div class="advice-text">
+          <h4>本周烈火</h4>
+          <div class="flame-row">${flames}</div>
         </div>
       </div>
 
@@ -143,7 +198,7 @@ function renderExerciseGuide() {
         <i class="ri-book-open-line"></i>
         <div class="advice-text">
           <h4>生命哲思</h4>
-          <p class="quote-text">"${getDailyQuote(today)}"</p>
+          <p class="quote-text">"${getDailyQuote(new Date())}"</p>
         </div>
       </div>
 
@@ -156,27 +211,24 @@ function renderExerciseGuide() {
           <p>每天漫步 1-2 小时，模拟原始人类的平静采集日</p>
         </div>
       </div>
+
     </div>
   `;
-  
-  container.innerHTML = html;
 }
 
-// 渲染营养板块
 function renderNutritionGuide() {
   const today = new Date();
   const container = document.getElementById('nutrition');
-  
   if (!container) return;
-  
-  // 获取今日饮食类型（基于日期固定）
   const dietType = getDietType(today);
-  
-  let html = `
-    <h3>🌱 营养</h3>
+
+  container.innerHTML = `
+    <div class="card-head">
+      <h3>🌱 营养</h3>
+      <div class="section-en">Remove the harm.</div>
+    </div>
     <div class="core-advice">
-      
-      <!-- 1. 饮食铁律 -->
+
       <div class="advice-item">
         <i class="ri-restaurant-line"></i>
         <div class="advice-text">
@@ -186,10 +238,9 @@ function renderNutritionGuide() {
           <p><strong>去除毒素</strong> - 多糖、重盐、种子油。</p>
         </div>
       </div>
-      
+
       <div class="divider"></div>
-      
-      <!-- 2. 今日建议 -->
+
       ${dietType === 'fasting' ? `
       <div class="advice-item">
         <i class="ri-time-line"></i>
@@ -223,10 +274,9 @@ function renderNutritionGuide() {
         </div>
       </div>
       `}
-      
+
       <div class="divider"></div>
-      
-      <!-- 3. 核心原则 -->
+
       <div class="advice-item">
         <i class="ri-brain-line"></i>
         <div class="advice-text">
@@ -235,23 +285,22 @@ function renderNutritionGuide() {
           <p><strong>无固定计划</strong> - 不数卡路里，不固定餐次。听身体信号，饿了就吃，饱了就停。</p>
         </div>
       </div>
-      
+
     </div>
   `;
-  
-  container.innerHTML = html;
 }
 
-// 渲染睡眠板块
 function renderSleepGuide() {
   const container = document.getElementById('sleep');
-  
   if (!container) return;
-  
-  let html = `
-    <h3>😴 睡眠</h3>
+
+  container.innerHTML = `
+    <div class="card-head">
+      <h3>😴 睡眠</h3>
+      <div class="section-en">Let what recovers recover.</div>
+    </div>
     <div class="core-advice">
-      
+
       <div class="advice-item">
         <i class="ri-time-line"></i>
         <div class="advice-text">
@@ -259,9 +308,9 @@ function renderSleepGuide() {
           <p>不设闹钟，不排时间表。身体自然醒就起床，困了再睡。由内在节律而非外部钟表主导。</p>
         </div>
       </div>
-      
+
       <div class="divider"></div>
-      
+
       <div class="advice-item">
         <i class="ri-heart-line"></i>
         <div class="advice-text">
@@ -269,9 +318,9 @@ function renderSleepGuide() {
           <p>质量重于时长。接纳白天小睡，核心是解除对睡眠时长的焦虑，专注恢复本身。</p>
         </div>
       </div>
-      
+
       <div class="divider"></div>
-      
+
       <div class="advice-item">
         <i class="ri-refresh-line"></i>
         <div class="advice-text">
@@ -279,48 +328,55 @@ function renderSleepGuide() {
           <p>偶发失眠是系统抗干扰训练。只要白天不大量补睡，身体自我恢复后，未来睡眠反而更稳定。</p>
         </div>
       </div>
+
     </div>
   `;
-  
-  container.innerHTML = html;
 }
 
 /* ============================================================
-   5. 初始化
+   6. 交互：选择今天的状态（可改选、可取消）
    ============================================================ */
+
+function bindExerciseChoice() {
+  const container = document.getElementById('exercise');
+  if (!container) return;
+
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.choice-btn');
+    if (!btn) return;
+
+    const kind = btn.dataset.kind; // 'walk' | 'hi'
+    const state = getWeekState();
+    const todayIdx = (new Date().getDay() + 6) % 7;
+    const prev = countHI(state);
+
+    // 再点一次已选项 = 取消；点另一项 = 改选
+    state[todayIdx] = state[todayIdx] === kind ? undefined : kind;
+    if (state[todayIdx] === undefined) delete state[todayIdx];
+    saveWeekState(state);
+
+    const now = countHI(state);
+    justAchieved = prev < HI_WEEKLY_GOAL && now >= HI_WEEKLY_GOAL;
+    renderExerciseGuide();
+    justAchieved = false;
+  });
+}
+
+/* ============================================================
+   7. 初始化
+   ============================================================ */
+
 function initWildPage() {
-  console.log('Initializing Wildness Instinct...');
+  initTitle();
+  initEmbers();
   renderExerciseGuide();
   renderNutritionGuide();
   renderSleepGuide();
-  
-  // 方案一：今日计划高亮强调动画（打开网页时强调 5 秒）
-  highlightTodayPlan();
-  
-  console.log('Initialization complete.');
+  bindExerciseChoice();
 }
 
-// 方案一：高亮强调今日计划
-function highlightTodayPlan() {
-  const todayPlanElement = document.querySelector('.today-plan');
-  if (todayPlanElement) {
-    // 延迟一点时间，等板块显示后再高亮
-    setTimeout(() => {
-      todayPlanElement.classList.add('highlight-active');
-      
-      // 5 秒后恢复正常
-      setTimeout(() => {
-        todayPlanElement.classList.remove('highlight-active');
-      }, 5000);
-    }, 1500);
-  }
-}
-
-// DOM 加载完成后初始化
-document.addEventListener('DOMContentLoaded', initWildPage);
-
-// 调试：检查 DOM 是否加载完成
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  // 文档已经加载完成，手动初始化
-  setTimeout(initWildPage, 100);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initWildPage);
+} else {
+  initWildPage();
 }
