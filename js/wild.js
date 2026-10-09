@@ -86,12 +86,16 @@ function initIntro() {
     setTimeout(() => overlay.remove(), 600);
   };
 
-  // 点击任意处或"跳过"立即结束
-  overlay.addEventListener('click', finish);
-  document.getElementById('introSkip')?.addEventListener('click', finish);
+  // 三句哲思逐词浮现：句起点 0.9 / 3.1 / 5.3，词间错落 0.07s
+  document.querySelectorAll('.intro-line').forEach((el, li) => {
+    const start = 0.9 + li * 2.2;
+    el.innerHTML = el.textContent.trim().split(/\s+/)
+      .map((w, i) => `<span class="w" style="animation-delay:${(start + i * 0.07).toFixed(2)}s">${w}</span>`)
+      .join(' ');
+  });
 
-  // 完整时长：三句(0.4-4.5s) + 静默一拍 → 5.6s 收场
-  setTimeout(finish, 5600);
+  // 完整播放，不可跳过。8.6s 收场
+  setTimeout(finish, 8600);
 }
 
 /* ============================================================
@@ -109,17 +113,24 @@ function initEmbers() {
   resize();
   addEventListener('resize', resize);
 
-  const spawn = (p = {}) => Object.assign(p, {
-    x: Math.random() * W,
-    y: H * (0.55 + Math.random() * 0.5),
-    r: 0.6 + Math.random() * 1.7,
-    vy: 0.25 + Math.random() * 0.6,
-    ph: Math.random() * Math.PI * 2,
-    sp: 0.008 + Math.random() * 0.02,
-    a: 0.12 + Math.random() * 0.38
-  });
+  // 收尾时烬火短暂升腾（配合开场白节奏：7.2s 起，持续 1.4s）
+  let flareUntil = 0;
+  setTimeout(() => { flareUntil = performance.now() + 1400; }, 7200);
 
-  for (let i = 0; i < 36; i++) parts.push(spawn({ y: Math.random() * H }));
+  const spawn = (p = {}) => {
+    const flaring = performance.now() < flareUntil;
+    return Object.assign(p, {
+      x: Math.random() * W,
+      y: H * (0.55 + Math.random() * 0.5),
+      r: 0.6 + Math.random() * 1.7,
+      vy: (0.25 + Math.random() * 0.6) * (flaring ? 2.2 : 1),
+      ph: Math.random() * Math.PI * 2,
+      sp: 0.008 + Math.random() * 0.02,
+      a: (0.12 + Math.random() * 0.38) * (flaring ? 1.8 : 1)
+    });
+  };
+
+  for (let i = 0; i < 64; i++) parts.push(spawn({ y: Math.random() * H }));
 
   (function loop() {
     if (!c.isConnected) return; // 开场白已移除，停止动画
@@ -132,6 +143,8 @@ function initEmbers() {
       p.x += Math.sin(p.ph) * 0.35;
       const fade = Math.min(1, (p.y / H) * 2.2);
       ctx.beginPath();
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = 'rgba(240,190,80,0.5)';
       ctx.fillStyle = `rgba(240,190,80,${(p.a * fade).toFixed(3)})`;
       ctx.arc(p.x, p.y, p.r, 0, 7);
       ctx.fill();

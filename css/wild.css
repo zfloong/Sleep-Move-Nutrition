@@ -13,6 +13,7 @@
     background: var(--bg-deep);
     display: grid;
     place-items: center;
+    overflow: hidden;
     transition: opacity 0.55s ease;
 }
 
@@ -29,7 +30,7 @@
     pointer-events: none;
 }
 
-/* 三句哲思：同一位置逐句轮换 */
+/* 三句哲思：逐词浮现，同一位置逐句轮换 */
 .intro-lines {
     position: absolute;
     inset: 0;
@@ -44,50 +45,88 @@
     text-align: center;
     font-family: Georgia, 'Times New Roman', serif;
     font-style: italic;
-    font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+    font-size: clamp(1.5rem, 3.8vw, 2.4rem);
     letter-spacing: 1px;
     color: #d9c48a;
+}
+
+.intro-line .w {
+    display: inline-block;
     opacity: 0;
-    animation: lineCycle 1.5s ease forwards;
+    filter: blur(10px);
+    transform: translateY(14px);
+    animation: wordCycle 2.3s cubic-bezier(0.25, 0.6, 0.3, 1) forwards;
+    /* 每词延迟由 JS 内联写入：句起点 + i * 0.07s */
 }
 
-.intro-line[data-line="1"] { animation-delay: 0.4s; }
-.intro-line[data-line="2"] { animation-delay: 1.7s; }
-.intro-line[data-line="3"] { animation-delay: 3.0s; }
-
-@keyframes lineCycle {
-    0%   { opacity: 0; transform: translateY(14px); }
-    20%  { opacity: 1; transform: none; }
-    78%  { opacity: 1; }
-    100% { opacity: 0; transform: translateY(-10px); }
+@keyframes wordCycle {
+    0%   { opacity: 0; filter: blur(10px); transform: translateY(14px); }
+    16%  { opacity: 1; filter: blur(0);   transform: none; }
+    72%  { opacity: 1; filter: blur(0);   transform: none; }
+    100% { opacity: 0; filter: blur(8px); transform: translateY(-12px); }
 }
 
-/* 跳过按钮 */
-.intro-skip {
+/* 中央呼吸金晕 */
+.intro-glow {
     position: absolute;
-    right: 22px;
-    bottom: 20px;
-    background: none;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    color: rgba(255, 255, 255, 0.45);
-    border-radius: 99px;
-    padding: 6px 14px;
-    font-size: 0.8rem;
-    font-family: var(--font-sans);
-    cursor: pointer;
+    left: 50%;
+    top: 50%;
+    width: 70vmin;
+    height: 70vmin;
+    transform: translate(-50%, -50%) scale(0.7);
+    background: radial-gradient(closest-side, rgba(212, 175, 55, 0.12), transparent 70%);
     opacity: 0;
-    animation: fadeIn 0.6s ease 1.2s forwards;
-    z-index: 2;
-    transition: color 0.25s ease, border-color 0.25s ease;
+    animation: glowBreathe 9s ease forwards;
+    pointer-events: none;
 }
 
-.intro-skip:hover {
-    color: rgba(255, 255, 255, 0.8);
-    border-color: rgba(255, 255, 255, 0.35);
+@keyframes glowBreathe {
+    0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.7); }
+    25%  { opacity: 1; }
+    80%  { opacity: 0.9; transform: translate(-50%, -50%) scale(1.08); }
+    100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.2); }
 }
 
-@keyframes fadeIn {
-    to { opacity: 1; }
+/* 胶片颗粒 */
+.intro-grain {
+    position: absolute;
+    inset: -50%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    opacity: 0.05;
+    animation: grainShift 0.9s steps(3) infinite;
+    pointer-events: none;
+}
+
+@keyframes grainShift {
+    0%   { transform: translate(0, 0); }
+    33%  { transform: translate(-6%, 4%); }
+    66%  { transform: translate(5%, -5%); }
+    100% { transform: translate(0, 0); }
+}
+
+/* 底部金色进度发丝线 */
+.intro-progress {
+    position: absolute;
+    left: 50%;
+    bottom: 44px;
+    width: 140px;
+    height: 1px;
+    margin-left: -70px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.intro-progress i {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(212, 175, 55, 0.2), #d4af37);
+    transform-origin: left;
+    transform: scaleX(0);
+    animation: progressFill 8.6s linear forwards;
+}
+
+@keyframes progressFill {
+    to { transform: scaleX(1); }
 }
 
 /* ============================================================

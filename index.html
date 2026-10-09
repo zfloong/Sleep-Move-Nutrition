@@ -12,15 +12,17 @@
 </head>
 <body>
 
-    <!-- 开场白：三句哲思，结束后淡出进入主页 -->
+    <!-- 开场白：三句哲思，完整播放，不可跳过 -->
     <div class="intro-overlay" id="introOverlay">
         <canvas id="emberCanvas" class="ember-canvas"></canvas>
+        <div class="intro-glow"></div>
+        <div class="intro-grain"></div>
         <div class="intro-lines">
             <p class="intro-line" data-line="1">Remove the harm.</p>
             <p class="intro-line" data-line="2">Apply the stress.</p>
             <p class="intro-line" data-line="3">Let what recovers recover.</p>
         </div>
-        <button class="intro-skip" id="introSkip">跳过 →</button>
+        <div class="intro-progress"><i></i></div>
     </div>
 
     <div class="wild-wrapper">
