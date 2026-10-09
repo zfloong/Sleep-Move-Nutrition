@@ -86,75 +86,13 @@ function initIntro() {
     setTimeout(() => overlay.remove(), 600);
   };
 
-  // 三句哲思逐词浮现：句起点 0.9 / 3.1 / 5.3，词间错落 0.07s
-  document.querySelectorAll('.intro-line').forEach((el, li) => {
-    const start = 0.9 + li * 2.2;
-    el.innerHTML = el.textContent.trim().split(/\s+/)
-      .map((w, i) => `<span class="w" style="animation-delay:${(start + i * 0.07).toFixed(2)}s">${w}</span>`)
-      .join(' ');
-  });
-
-  // 完整播放，不可跳过。8.6s 收场
-  setTimeout(finish, 8600);
+  // 三句哲思的时序由 CSS 接管（0.8 / 1.9 / 3.0s），这里只负责收场
+  // Apple 语法：场景先在，文字后浮，4.5s 淡出进主页
+  setTimeout(finish, 4500);
 }
 
 /* ============================================================
-   4. 烬火粒子（开场白背景的火星）
-   ============================================================ */
-
-function initEmbers() {
-  const c = document.getElementById('emberCanvas');
-  if (!c) return;
-  const ctx = c.getContext('2d');
-  let W, H;
-  const parts = [];
-
-  const resize = () => { W = c.width = c.offsetWidth; H = c.height = c.offsetHeight; };
-  resize();
-  addEventListener('resize', resize);
-
-  // 收尾时烬火短暂升腾（配合开场白节奏：7.2s 起，持续 1.4s）
-  let flareUntil = 0;
-  setTimeout(() => { flareUntil = performance.now() + 1400; }, 7200);
-
-  const spawn = (p = {}) => {
-    const flaring = performance.now() < flareUntil;
-    return Object.assign(p, {
-      x: Math.random() * W,
-      y: H * (0.55 + Math.random() * 0.5),
-      r: 0.6 + Math.random() * 1.7,
-      vy: (0.25 + Math.random() * 0.6) * (flaring ? 2.2 : 1),
-      ph: Math.random() * Math.PI * 2,
-      sp: 0.008 + Math.random() * 0.02,
-      a: (0.12 + Math.random() * 0.38) * (flaring ? 1.8 : 1)
-    });
-  };
-
-  for (let i = 0; i < 64; i++) parts.push(spawn({ y: Math.random() * H }));
-
-  (function loop() {
-    if (!c.isConnected) return; // 开场白已移除，停止动画
-    requestAnimationFrame(loop);
-    if (document.hidden) return;
-    ctx.clearRect(0, 0, W, H);
-    for (const p of parts) {
-      p.y -= p.vy;
-      p.ph += p.sp;
-      p.x += Math.sin(p.ph) * 0.35;
-      const fade = Math.min(1, (p.y / H) * 2.2);
-      ctx.beginPath();
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = 'rgba(240,190,80,0.5)';
-      ctx.fillStyle = `rgba(240,190,80,${(p.a * fade).toFixed(3)})`;
-      ctx.arc(p.x, p.y, p.r, 0, 7);
-      ctx.fill();
-      if (p.y < H * 0.1 || p.a * fade < 0.02) spawn(p);
-    }
-  })();
-}
-
-/* ============================================================
-   5. UI 渲染
+   4. UI 渲染
    ============================================================ */
 
 let justAchieved = false; // 本次操作是否刚刚达成目标（用于徽章弹出动画）
@@ -379,7 +317,6 @@ function bindExerciseChoice() {
 
 function initWildPage() {
   initIntro();
-  initEmbers();
   renderExerciseGuide();
   renderNutritionGuide();
   renderSleepGuide();
