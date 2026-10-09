@@ -1,6 +1,6 @@
 /* =========================================
    Wildness Instinct - 今日指南系统
-   Version: 9.0 - 施压选择系统 + 烬火粒子
+   Version: 10.0 - 开场白 + 施压选择系统
    Philosophy: 反脆弱 + 杠铃策略 + 听身体
    ========================================= */
 
@@ -71,7 +71,42 @@ function saveWeekState(state) {
 const countHI = (state) => Object.values(state).filter(v => v === 'hi').length;
 
 /* ============================================================
-   3. 烬火粒子（标题背后的火星）
+   3. 开场白编排
+   三句哲思逐句浮现 → 狂草标题落笔 → 淡出进入主页
+   ============================================================ */
+
+function initIntro() {
+  const overlay = document.getElementById('introOverlay');
+  if (!overlay) { document.body.classList.add('ready'); return; }
+
+  const finish = () => {
+    if (overlay.classList.contains('hide')) return;
+    overlay.classList.add('hide');
+    document.body.classList.add('ready');
+    setTimeout(() => overlay.remove(), 600);
+  };
+
+  // 减少动态偏好：直接进主页
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { finish(); return; }
+
+  // 狂草标题逐字落笔（在三句哲思之后）
+  const title = document.getElementById('introTitle');
+  if (title) {
+    title.innerHTML = [...title.textContent]
+      .map((c, i) => `<span class="ch" style="animation-delay:${(4.8 + i * 0.16).toFixed(2)}s, 0s">${c}</span>`)
+      .join('');
+  }
+
+  // 点击任意处或"跳过"立即结束
+  overlay.addEventListener('click', finish);
+  document.getElementById('introSkip')?.addEventListener('click', finish);
+
+  // 完整时长：三句(0.4-4.5s) + 标题(4.8-5.5s) + 停留 → 6.8s 收场
+  setTimeout(finish, 6800);
+}
+
+/* ============================================================
+   4. 烬火粒子（开场白背景的火星）
    ============================================================ */
 
 function initEmbers() {
@@ -98,6 +133,7 @@ function initEmbers() {
   for (let i = 0; i < 36; i++) parts.push(spawn({ y: Math.random() * H }));
 
   (function loop() {
+    if (!c.isConnected) return; // 开场白已移除，停止动画
     requestAnimationFrame(loop);
     if (document.hidden) return;
     ctx.clearRect(0, 0, W, H);
@@ -116,16 +152,6 @@ function initEmbers() {
 }
 
 /* ============================================================
-   4. 标题逐字入场
-   ============================================================ */
-
-function initTitle() {
-  const t = document.getElementById('wildTitle');
-  if (!t) return;
-  t.innerHTML = [...t.textContent].map(c => `<span class="ch">${c}</span>`).join('');
-}
-
-/* ============================================================
    5. UI 渲染
    ============================================================ */
 
@@ -137,11 +163,11 @@ function renderExerciseGuide() {
 
   const state = getWeekState();
   const hiCount = countHI(state);
-  const todayIdx = (new Date().getDay() + 6) % 7; // 0=周一
-  const todayChoice = state[todayIdx];
+  const todayChoice = state[(new Date().getDay() + 6) % 7]; // 0=周一
+  const achieved = hiCount >= HI_WEEKLY_GOAL;
 
   // 徽章：本周高强度 ≥ 2 次
-  const badge = hiCount >= HI_WEEKLY_GOAL
+  const badge = achieved
     ? `<span class="goal-badge${justAchieved ? ' pop' : ''}"><i class="ri-check-line"></i>本周目标已达成</span>`
     : '';
 
@@ -149,15 +175,8 @@ function renderExerciseGuide() {
   const adviceText =
     todayChoice === 'hi'   ? '今天已施加压力。剩下的时间交给恢复——漫步、早睡，让超补偿开始。' :
     todayChoice === 'walk' ? '今天是恢复日。漫步 1-2 小时，平静而悠长，让身体修复。' :
+    achieved               ? '本周烈火已足。今天随心：想烧就烧，想走就走。' :
                              '身体允许，就全力输出 5-15 分钟；不允许，就漫步 1-2 小时。你说了算。';
-
-  // 火焰进度
-  let flames = '';
-  for (let i = 0; i < Math.max(HI_WEEKLY_GOAL, hiCount); i++) {
-    const cls = i < hiCount ? (i >= HI_WEEKLY_GOAL ? 'lit extra' : 'lit') : '';
-    flames += `<i class="ri-fire-${i < hiCount ? 'fill' : 'line'} ${cls}"></i>`;
-  }
-  flames += `<span class="flame-count">${hiCount} / ${HI_WEEKLY_GOAL}${hiCount > HI_WEEKLY_GOAL ? ' · 火力全开' : ''}</span>`;
 
   container.innerHTML = `
     <div class="card-head">
@@ -179,16 +198,6 @@ function renderExerciseGuide() {
               <i class="ri-fire-line"></i>高强度日
             </button>
           </div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="advice-item">
-        <i class="ri-fire-line"></i>
-        <div class="advice-text">
-          <h4>本周烈火</h4>
-          <div class="flame-row">${flames}</div>
         </div>
       </div>
 
@@ -367,7 +376,7 @@ function bindExerciseChoice() {
    ============================================================ */
 
 function initWildPage() {
-  initTitle();
+  initIntro();
   initEmbers();
   renderExerciseGuide();
   renderNutritionGuide();

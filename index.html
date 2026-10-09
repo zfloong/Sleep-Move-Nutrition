@@ -12,24 +12,35 @@
 </head>
 <body>
 
+    <!-- 开场白：三句哲思 + 狂草标题，结束后淡出进入主页 -->
+    <div class="intro-overlay" id="introOverlay">
+        <canvas id="emberCanvas" class="ember-canvas"></canvas>
+        <div class="intro-lines">
+            <p class="intro-line" data-line="1">Remove the harm.</p>
+            <p class="intro-line" data-line="2">Apply the stress.</p>
+            <p class="intro-line" data-line="3">Let what recovers recover.</p>
+        </div>
+        <h1 class="intro-title" id="introTitle">狂野生长</h1>
+        <button class="intro-skip" id="introSkip">跳过 →</button>
+    </div>
+
     <div class="wild-wrapper">
 
         <div class="page-header">
-            <canvas id="emberCanvas" class="ember-canvas"></canvas>
-            <h1 class="page-title" id="wildTitle">狂野生长</h1>
+            <h1 class="page-title">狂野生长</h1>
         </div>
 
         <div class="wild-dashboard">
 
-            <!-- 睡眠板块 (左侧列) -->
+            <!-- 睡眠板块 (左列) -->
             <section id="sleep" class="sleep-card guide-card">
             </section>
 
-            <!-- 运动板块 (中间列) -->
+            <!-- 运动板块 (中列) -->
             <section id="exercise" class="exercise-card guide-card">
             </section>
 
-            <!-- 营养板块 (右侧列) -->
+            <!-- 营养板块 (右列) -->
             <section id="nutrition" class="nutrition-card guide-card">
             </section>
 

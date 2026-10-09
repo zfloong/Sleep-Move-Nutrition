@@ -3,18 +3,18 @@
    ========================================= */
 :root {
     /* 背景不是死黑，而是带有极微弱蓝调的深空黑，更有质感 */
-    --bg-deep: #050507;       
-    --bg-center: #1a1d24;      
-    
+    --bg-deep: #050507;
+    --bg-center: #1a1d24;
+
     /* 升级后的“流动金” */
-    --accent: #d4b483;        
+    --accent: #d4b483;
     --gold-gradient: linear-gradient(135deg, #f3e7e9 0%, #e3eeff 15%, #d4b483 50%, #8b6c42 100%);
     /* 或者更低调的香槟金渐变 */
     --text-gold-gradient: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
 
     --text-main: #e0e0e0;
     --text-muted: #86868b; /* Apple 风格的灰色 */
-    
+
     --font-serif: 'Noto Serif SC', serif;
     --font-brush: 'Liu Jian Mao Cao', 'Ma Shan Zheng', cursive;
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
