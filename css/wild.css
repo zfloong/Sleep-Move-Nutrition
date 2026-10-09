@@ -1,12 +1,13 @@
 /* =========================================
    Wildness Instinct - 运动·营养·睡眠三列布局
-   v11: Apple 式开场白 + 三大板块
+   v12: 文字即光（零背景光源）+ 三大板块
    缓动纪律: 入场 (0.32,0.72,0,1) / 小位移 (0.25,1,0.5,1) / in-out (0.77,0,0.175,1)
    ========================================= */
 
 /* ============================================================
    开场白 Intro Overlay
-   Apple 语法: 场景先在（多层光），文字 400ms 后浮，无特效堆砌
+   文字即光: 背景纯黑零光源，唯一的光由文字自身发出——
+   每句浮现瞬间带一次辉光爆发，随即收束归于平静，字熄光熄。
    ============================================================ */
 .intro-overlay {
     position: fixed;
@@ -15,10 +16,14 @@
     display: grid;
     place-items: center;
     overflow: hidden;
-    background:
-        radial-gradient(ellipse 90% 65% at 50% 34%, rgba(233, 201, 120, 0.18), transparent 68%),
-        #050507;
+    background: #050507;
     transition: opacity 0.45s cubic-bezier(0.77, 0, 0.175, 1);
+    /* 纯 CSS 兜底：若 JS 异常未收场，开场自终，防止黑幕锁死 */
+    animation: introFailsafe 0.45s linear 5.4s forwards;
+}
+
+@keyframes introFailsafe {
+    to { opacity: 0; visibility: hidden; }
 }
 
 .intro-overlay.hide {
@@ -26,17 +31,17 @@
     pointer-events: none;
 }
 
-/* 1% 静态噪点：打散低透明渐变的色带（banding），肉眼不可见 */
+/* 2.5% 静态胶片颗粒：纯黑底的唯一质感来源，隐约可感不可察 */
 .intro-overlay::after {
     content: "";
     position: absolute;
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    opacity: 0.012;
+    opacity: 0.025;
     pointer-events: none;
 }
 
-/* 三句哲思：同位交叉淡替，整句进整句出，字即主视觉 */
+/* 三句哲思：同位交叉淡替，整句进整句出，字即主视觉兼唯一光源 */
 .intro-lines {
     position: absolute;
     inset: 0;
@@ -47,14 +52,15 @@
 .intro-line {
     grid-area: 1 / 1;
     margin: 0;
-    padding: 0 24px;
+    padding: 0 clamp(18px, 5vw, 48px);
     text-align: center;
-    font-family: var(--font-sans);
-    font-weight: 600;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 400;
     font-size: clamp(1.7rem, 3.6vw, 2.6rem);
-    letter-spacing: -0.02em;
+    letter-spacing: 0.01em;
     color: #f5f5f7;
     opacity: 0;
+    will-change: opacity, filter;
     animation: lineBeat 1.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
@@ -63,10 +69,17 @@
 .intro-line[data-line="3"] { animation-delay: 3.0s; }
 
 @keyframes lineBeat {
-    0%   { opacity: 0; filter: blur(6px); transform: translateY(12px); }
-    42%  { opacity: 1; filter: blur(0);   transform: none; }
-    76%  { opacity: 1; filter: blur(0);   transform: none; }
-    100% { opacity: 0; filter: blur(6px); transform: translateY(-8px); }
+    /* 诞生：一团暖光向内凝聚成字（暖色呼应黑金，收束后归冷白） */
+    0%   { opacity: 0; filter: blur(6px); transform: translateY(12px) scale(1.035);
+           text-shadow: 0 0 70px rgba(255, 240, 214, 0.85), 0 0 26px rgba(255, 255, 255, 0.45); }
+    /* 辉光彻底收束，字归于平静，光不留驻 */
+    42%  { opacity: 1; filter: blur(0);   transform: none;
+           text-shadow: 0 0 0 rgba(255, 255, 255, 0), 0 0 0 rgba(255, 255, 255, 0); }
+    76%  { opacity: 1; filter: blur(0);   transform: none;
+           text-shadow: 0 0 0 rgba(255, 255, 255, 0), 0 0 0 rgba(255, 255, 255, 0); }
+    /* 熄灭：字熄光熄（端点显式透明，规避旧 Safari 对 none 的离散跳变） */
+    100% { opacity: 0; filter: blur(6px); transform: translateY(-8px);
+           text-shadow: 0 0 0 rgba(255, 255, 255, 0), 0 0 0 rgba(255, 255, 255, 0); }
 }
 
 /* ============================================================
