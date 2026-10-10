@@ -22,16 +22,34 @@
 body {
     margin: 0;
     background-color: var(--bg-deep);
-    background-image: radial-gradient(ellipse 120% 55% at 50% -15%, rgba(233, 201, 120, 0.08), transparent 60%);
     color: var(--text-main);
     font-family: var(--font-sans);
     min-height: 100vh;
     overflow-x: hidden;
     padding-top: 40px;
+}
 
-    /* 【核心升级】背景不再是平铺噪点，而是深邃的聚光灯效果 */
-    background-image: radial-gradient(circle at 50% 30%, #1a1d24 0%, #050507 70%);
-    background-attachment: fixed; /* 滚动时背景不动，增加高级感 */
+/* 主页底层：与开场同一张波形影像，blur/饱和度已离线烘焙进 home-bg.webp，
+   CSS 不承担 filter（常驻整屏 filter 是中低端机滚动硬伤）；
+   遮罩顶轻底重——顶部 50px 带是桌面端主可见区 */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        linear-gradient(180deg,
+            rgba(5, 5, 7, 0.80) 0%,
+            rgba(5, 5, 7, 0.70) 45%,
+            rgba(5, 5, 7, 0.86) 100%),
+        url("../assets/home-bg.webp") center / cover no-repeat;
+}
+
+/* 竖屏：与开场同一取景，亮脊回到右上 */
+@media (max-width: 768px) {
+    body::before {
+        background-position: 62% 38%;
+    }
 }
 
 /* =========================================
