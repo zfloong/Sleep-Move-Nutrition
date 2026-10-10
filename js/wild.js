@@ -13,7 +13,7 @@ const DAILY_QUOTES = [
   '生命需要间歇性剧烈压力，而非绝对稳定。追求恒定只会变脆弱。',
   '史前人类从无"每周三次、定时定量"的机械锻炼日程。',
   '若无精神追求，马拉松便是一种现代发明的、匀速的枯燥消耗。',
-  '"规律运动"是现代迷信，它误以为稳定输入必有线性回报。',
+  '"规律运动"是现代人的迷思，它误以为稳定输入必有线性回报。',
   '规律的中等强度锻炼，因缺乏极致刺激与修复，往往效率最低。',
   '最佳策略是"两极结合"：极高强度冲击配以极长时间悠闲。',
   '实践上，大量悠闲漫步为基础，穿插几次短暂但拼尽全力的锻炼。',
@@ -31,15 +31,6 @@ function getDailyQuote(date) {
   const startOfYear = new Date(date.getFullYear(), 0, 0);
   const dayOfYear = Math.floor((date - startOfYear) / (1000 * 60 * 60 * 24));
   return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
-}
-
-// 根据日期获取饮食类型（10 天一个周期）
-function getDietType(date) {
-  const cycle = date.getDate() % 10;
-  if (cycle < 4) return 'fasting';
-  if (cycle < 6) return 'feast';
-  if (cycle < 9) return 'plant_based';
-  return 'random';
 }
 
 /* ============================================================
@@ -103,7 +94,8 @@ function renderExerciseGuide() {
 
   const state = getWeekState();
   const hiCount = countHI(state);
-  const todayChoice = state[(new Date().getDay() + 6) % 7]; // 0=周一
+  const todayIdx = (new Date().getDay() + 6) % 7; // 0=周一
+  const isHI = state[todayIdx] === 'hi';
   const achieved = hiCount >= HI_WEEKLY_GOAL;
 
   // 徽章：本周高强度 ≥ 2 次
@@ -111,12 +103,12 @@ function renderExerciseGuide() {
     ? `<span class="goal-badge${justAchieved ? ' pop' : ''}"><i class="ri-check-line"></i>本周目标已达成</span>`
     : '';
 
-  // 今日建议文案（随状态变化）
-  const adviceText =
-    todayChoice === 'hi'   ? '今天已施加压力。剩下的时间交给恢复——漫步、早睡，让超补偿开始。' :
-    todayChoice === 'walk' ? '今天是恢复日。漫步 1-2 小时，平静而悠长，让身体修复。' :
-    achieved               ? '本周烈火已足。今天随心：想烧就烧，想走就走。' :
-                             '身体允许，就全力输出 5-15 分钟；不允许，就漫步 1-2 小时。你说了算。';
+  // 今日建议文案：只有"今天是高强度"和"今天默认漫步"两种状态
+  const adviceText = isHI
+    ? '今天已施加压力。剩下的时间交给恢复——漫步、早睡，让超补偿开始。'
+    : achieved
+      ? '本周目标已达成。今天随心：想烧就烧，想走就走。'
+      : '默认漫步日。身体允许就全力输出 5-15 分钟，不允许就漫步 1-2 小时。';
 
   container.innerHTML = `
     <div class="card-head">
@@ -131,11 +123,8 @@ function renderExerciseGuide() {
           <h4>今日 · 身体信号</h4>
           <p>${adviceText}</p>
           <div class="today-choice">
-            <button class="choice-btn walk${todayChoice === 'walk' ? ' active-walk' : ''}" data-kind="walk">
-              <i class="ri-footprint-line"></i>漫步日
-            </button>
-            <button class="choice-btn hi${todayChoice === 'hi' ? ' active-hi' : ''}" data-kind="hi">
-              <i class="ri-fire-line"></i>高强度日
+            <button class="choice-btn hi${isHI ? ' active-hi' : ''}" data-kind="hi">
+              <i class="ri-fire-line"></i>高强度锻炼日
             </button>
           </div>
         </div>
@@ -166,10 +155,8 @@ function renderExerciseGuide() {
 }
 
 function renderNutritionGuide() {
-  const today = new Date();
   const container = document.getElementById('nutrition');
   if (!container) return;
-  const dietType = getDietType(today);
 
   container.innerHTML = `
     <div class="card-head">
@@ -184,54 +171,27 @@ function renderNutritionGuide() {
           <h4>饮食铁律</h4>
           <p><strong>不吃超加工食品</strong> - 只吃天然、未加工的传统食物。</p>
           <p><strong>只喝千年饮品</strong> - 水、咖啡、茶。</p>
-          <p><strong>去除毒素</strong> - 多糖、重盐、种子油。</p>
+          <p><strong>避免重糖重盐</strong> - 多糖、重盐、种子油。</p>
         </div>
       </div>
 
       <div class="divider"></div>
 
-      ${dietType === 'fasting' ? `
-      <div class="advice-item">
-        <i class="ri-time-line"></i>
-        <div class="advice-text">
-          <h4>禁食日</h4>
-          <p>今天跳过早餐或只吃一顿。激活自噬，让身体清理垃圾。</p>
-        </div>
-      </div>
-      ` : dietType === 'feast' ? `
-      <div class="advice-item">
-        <i class="ri-goblet-line"></i>
-        <div class="advice-text">
-          <h4>盛宴日</h4>
-          <p>今天可以大吃肉/内脏/骨髓！模仿祖先狩猎成功的日子。</p>
-        </div>
-      </div>
-      ` : dietType === 'plant_based' ? `
       <div class="advice-item">
         <i class="ri-leaf-line"></i>
         <div class="advice-text">
-          <h4>植物为主日</h4>
-          <p>今天以传统蔬菜、坚果、橄榄油为主。</p>
+          <h4>植物常规，肉不规律</h4>
+          <p>大部分日子以植物为主——传统蔬菜、坚果、橄榄油。偶尔大吃肉、内脏、骨髓，模仿祖先狩猎成功的日子。</p>
         </div>
       </div>
-      ` : `
-      <div class="advice-item">
-        <i class="ri-dice-3-line"></i>
-        <div class="advice-text">
-          <h4>随机营养日</h4>
-          <p>今天随机选择：想吃肉就吃肉，想吃素就吃素。听从身体。</p>
-        </div>
-      </div>
-      `}
 
       <div class="divider"></div>
 
       <div class="advice-item">
         <i class="ri-brain-line"></i>
         <div class="advice-text">
-          <h4>核心原则</h4>
-          <p><strong>植物常规，肉不规律</strong> - 大部分日子以植物为主，偶尔大吃肉/内脏/骨髓。</p>
-          <p><strong>无固定计划</strong> - 不数卡路里，不固定餐次。听身体信号，饿了就吃，饱了就停。</p>
+          <h4>听身体信号</h4>
+          <p>不数卡路里，不固定餐次。饿了就吃，饱了就停。偶尔跳过一餐让自噬启动。</p>
         </div>
       </div>
 
@@ -273,7 +233,7 @@ function renderSleepGuide() {
       <div class="advice-item">
         <i class="ri-refresh-line"></i>
         <div class="advice-text">
-          <h4>接受偶发剥夺</h4>
+          <h4>拥抱偶发剥夺</h4>
           <p>偶发失眠是系统抗干扰训练。只要白天不大量补睡，身体自我恢复后，未来睡眠反而更稳定。</p>
         </div>
       </div>
@@ -294,14 +254,16 @@ function bindExerciseChoice() {
     const btn = e.target.closest('.choice-btn');
     if (!btn) return;
 
-    const kind = btn.dataset.kind; // 'walk' | 'hi'
     const state = getWeekState();
     const todayIdx = (new Date().getDay() + 6) % 7;
     const prev = countHI(state);
 
-    // 再点一次已选项 = 取消；点另一项 = 改选
-    state[todayIdx] = state[todayIdx] === kind ? undefined : kind;
-    if (state[todayIdx] === undefined) delete state[todayIdx];
+    // 单按钮切换：点=标记高强度，再点=取消（回到默认漫步，无记录）
+    if (state[todayIdx] === 'hi') {
+      delete state[todayIdx];
+    } else {
+      state[todayIdx] = 'hi';
+    }
     saveWeekState(state);
 
     const now = countHI(state);
