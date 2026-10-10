@@ -112,7 +112,12 @@ function renderExerciseGuide() {
 
   container.innerHTML = `
     <div class="card-head">
-      <h3>🏃 运动 ${badge}</h3>
+      <h3>🏃 运动
+        <button class="hi-toggle${isHI ? ' active' : ''}" data-kind="hi">
+          <i class="ri-fire-line"></i>高强度锻炼日
+        </button>
+        ${badge}
+      </h3>
       <div class="section-en">Apply the stress.</div>
     </div>
     <div class="core-advice">
@@ -122,11 +127,6 @@ function renderExerciseGuide() {
         <div class="advice-text">
           <h4>今日 · 身体信号</h4>
           <p>${adviceText}</p>
-          <div class="today-choice">
-            <button class="choice-btn hi${isHI ? ' active-hi' : ''}" data-kind="hi">
-              <i class="ri-fire-line"></i>高强度锻炼日
-            </button>
-          </div>
         </div>
       </div>
 
@@ -251,7 +251,7 @@ function bindExerciseChoice() {
   if (!container) return;
 
   container.addEventListener('click', (e) => {
-    const btn = e.target.closest('.choice-btn');
+    const btn = e.target.closest('.hi-toggle');
     if (!btn) return;
 
     const state = getWeekState();
