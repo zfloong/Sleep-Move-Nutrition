@@ -29,9 +29,9 @@ body {
     padding-top: 40px;
 }
 
-/* 主页底层：与开场同一张波形影像，blur/饱和度已离线烘焙进 home-bg.webp，
-   CSS 不承担 filter（常驻整屏 filter 是中低端机滚动硬伤）；
-   遮罩顶轻底重——顶部 50px 带是桌面端主可见区 */
+/* 主页底层：与开场同一张波形影像、同一级模糊（已离线烘焙进 home-bg.webp，
+   CSS 不承担常驻 filter）。遮罩只比开场（0.88/0.80/0.90）轻一丝——
+   落幕瞬间背景几乎无感衔接，主页只是"稍微透了点气"的同一片影像 */
 body::before {
     content: "";
     position: fixed;
@@ -39,9 +39,9 @@ body::before {
     z-index: -1;
     background:
         linear-gradient(180deg,
-            rgba(5, 5, 7, 0.80) 0%,
-            rgba(5, 5, 7, 0.70) 45%,
-            rgba(5, 5, 7, 0.86) 100%),
+            rgba(5, 5, 7, 0.88) 0%,
+            rgba(5, 5, 7, 0.80) 45%,
+            rgba(5, 5, 7, 0.90) 100%),
         url("../assets/home-bg.webp") center / cover no-repeat;
 }
 
