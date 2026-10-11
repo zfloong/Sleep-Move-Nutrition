@@ -603,7 +603,7 @@ function renderExerciseGuide() {
       <div class="advice-item">
         <i class="ri-compass-3-line"></i>
         <div class="advice-text">
-          <h4>今日 · 身体信号</h4>
+          <h4>今日建议</h4>
           <p>${adviceText}</p>
         </div>
       </div>
@@ -657,7 +657,7 @@ function renderNutritionGuide() {
           <h4>饮食铁律</h4>
           <p><strong>不吃超加工食品</strong> - 只吃天然、未加工的传统食物。</p>
           <p><strong>只喝千年饮品</strong> - 水、咖啡、茶。</p>
-          <p><strong>避免重糖重盐</strong> - 多糖、重盐、种子油。</p>
+          <p><strong>避免重糖重盐</strong></p>
         </div>
       </div>
 
@@ -667,7 +667,7 @@ function renderNutritionGuide() {
         <i class="ri-leaf-line"></i>
         <div class="advice-text">
           <h4>植物常规，肉不规律</h4>
-          <p>大部分日子以植物为主——传统蔬菜、坚果、橄榄油。偶尔大吃肉、内脏、骨髓，模仿祖先狩猎成功的日子。</p>
+          <p>大部分日子以植物为主——传统蔬菜、坚果。偶尔大吃肉、内脏、骨髓，模仿祖先狩猎成功的日子。</p>
         </div>
       </div>
 
