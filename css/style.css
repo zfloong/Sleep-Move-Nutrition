@@ -4,13 +4,6 @@
 :root {
     /* 背景不是死黑，而是带有极微弱蓝调的深空黑，更有质感 */
     --bg-deep: #050507;
-    --bg-center: #1a1d24;
-
-    /* 升级后的“流动金” */
-    --accent: #d4b483;
-    --gold-gradient: linear-gradient(135deg, #f3e7e9 0%, #e3eeff 15%, #d4b483 50%, #8b6c42 100%);
-    /* 或者更低调的香槟金渐变 */
-    --text-gold-gradient: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
 
     --text-main: #e0e0e0;
     --text-muted: #86868b; /* Apple 风格的灰色 */
@@ -57,12 +50,3 @@ body::before {
    ========================================= */
 h1, h2, h3 { font-family: var(--font-serif); font-weight: 700; margin: 0; }
 p { line-height: 1.8; margin-bottom: 1.5rem; }
-
-/* 金色渐变文字类 */
-.text-gradient-gold {
-    background: var(--text-gold-gradient);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    display: inline-block;
-}

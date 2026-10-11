@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>狂野生长</title>
+    <meta name="theme-color" content="#050507">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="preload" as="image" href="assets/intro-bg.webp">
     <link rel="preload" as="image" href="assets/home-bg.webp">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
@@ -27,19 +29,22 @@
 
         <div class="wild-dashboard">
 
-            <!-- 睡眠板块 (左列) -->
-            <section id="sleep" class="sleep-card guide-card">
-            </section>
-
-            <!-- 运动板块 (中列) -->
+            <!-- 运动板块（第一章）：今天唯一要做决定的地方 -->
             <section id="exercise" class="exercise-card guide-card">
             </section>
 
-            <!-- 营养板块 (右列) -->
+            <!-- 睡眠板块（第二章） -->
+            <section id="sleep" class="sleep-card guide-card">
+            </section>
+
+            <!-- 营养板块（第三章） -->
             <section id="nutrition" class="nutrition-card guide-card">
             </section>
 
         </div>
+
+        <!-- 云同步状态条：由 JS 渲染，未接入时安静退场 -->
+        <footer class="sync-bar" id="syncBar" hidden></footer>
 
     </div>
 

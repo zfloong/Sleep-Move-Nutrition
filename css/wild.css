@@ -1,6 +1,6 @@
 /* =========================================
    Wildness Instinct - 运动·营养·睡眠三列布局
-   v13: 暗调影像幕布（模糊+重黑遮罩）+ 文字即光 + 三大板块
+   v15: 单列卷轴 —— 780px 窄栏纵向推进，滚动即叙事，一次一处焦点
    缓动纪律: 入场 (0.32,0.72,0,1) / 小位移 (0.25,1,0.5,1) / in-out (0.77,0,0.175,1)
    ========================================= */
 
@@ -117,53 +117,146 @@
     overflow-x: hidden;
 }
 
+/* ============================================================
+   主页布局：单列卷轴
+   一条 780px 居中窄栏，三章纵向推进，整页统一滚动。
+   高度由内容决定，不再绑视口；两侧留白把背景影像还给页面。
+   ============================================================ */
 .wild-dashboard {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    min-height: 82vh;
-    padding: 5vh 22px 22px;
-    max-width: 1600px;
-    margin: 0 auto;
-}
-
-/* --- 通用卡片：#1d1d1f 暗色瓦片 + 1px hairline，无玻璃无阴影 --- */
-.guide-card {
-    background: #1d1d1f;
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    padding: 22px;
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    min-height: 0;
-    overflow-y: auto;
+    gap: clamp(52px, 8vh, 88px);
+    width: 100%;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 14vh 22px 16vh;
+}
+
+/* 卷轴脊线：只在章节之间的留白里露出一线，把三章缝成一条叙事 */
+.wild-dashboard::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0),
+        rgba(255, 255, 255, 0.10) 10%,
+        rgba(255, 255, 255, 0.10) 90%,
+        rgba(255, 255, 255, 0));
+    pointer-events: none;
+}
+
+/* ============================================================
+   板块材质：与背景同源的"暗玻璃石板"
+   半透明让底层影像透上来 + 轻微 backdrop 模糊 → 板块不再贴在背景上，
+   而是从同一片影像里浮起；顶缘一线冷光呼应开场"文字即光"；
+   表面压与开场同一配方的胶片颗粒；三块各持一味克制金属色（银/金/铜绿）。
+   ============================================================ */
+.guide-card {
+    position: relative;
+    background-color: rgba(20, 20, 24, 0.62);
+    background-image:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.055) 0%,
+            rgba(255, 255, 255, 0.014) 42%,
+            rgba(255, 255, 255, 0) 100%),
+        radial-gradient(130% 62% at 50% -12%, var(--card-glow), rgba(0, 0, 0, 0) 72%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+    background-size: auto, auto, 200px 200px;
+    backdrop-filter: blur(14px) saturate(1.18);
+    -webkit-backdrop-filter: blur(14px) saturate(1.18);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    padding: 26px clamp(20px, 4vw, 30px) 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 30px 70px -50px rgba(0, 0, 0, 0.9);
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(34px);
+    transition: border-color 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+                box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* 开场结束后，卡片依次浮入（120ms 错落） */
-body.ready .guide-card {
-    animation: fadeInUp 0.55s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+/* 顶缘一线光：自中向左淡入、向右淡出，光源方向与开场一致 */
+.guide-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg,
+        rgba(0, 0, 0, 0), var(--card-line), rgba(0, 0, 0, 0));
+    opacity: 0.7;
+    pointer-events: none;
 }
 
-body.ready .sleep-card     { animation-delay: 0.10s; }
-body.ready .exercise-card  { animation-delay: 0.22s; }
-body.ready .nutrition-card { animation-delay: 0.34s; }
+.guide-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.95);
+}
+
+/* 滚动即叙事：板块滚入视区才被点亮（由 JS 的 IntersectionObserver 加 .in） */
+.guide-card.in {
+    animation: fadeInUp 0.7s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
 
 @keyframes fadeInUp {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- 三列定位 --- */
-.sleep-card     { grid-column: 1 / 2; }
-.exercise-card  { grid-column: 2 / 3; }
-.nutrition-card { grid-column: 3 / 4; }
+/* --- 章节色 ---
+   银（睡眠·夜与副交感）/ 金（运动·施压之火）/ 铜绿（营养·野生的生长）
+   三个色都压到低饱和，只染图标、纹章线与边缘辉光，正文保持中性灰以守住可读性 */
+.sleep-card {
+    --card-accent: #8fa3c0;
+    --card-glow: rgba(143, 163, 192, 0.15);
+    --card-line: rgba(143, 163, 192, 0.45);
+}
+.exercise-card {
+    --card-accent: #d9b45a;
+    --card-glow: rgba(212, 175, 55, 0.16);
+    --card-line: rgba(212, 175, 55, 0.50);
+}
+.nutrition-card {
+    --card-accent: #a4b184;
+    --card-glow: rgba(164, 177, 132, 0.14);
+    --card-line: rgba(164, 177, 132, 0.42);
+}
 
-/* --- 卡片头：中文标题 + 英文哲思 --- */
+/* --- 卡片头：编号 + 中文标题 + 英文哲思（右侧留给施压按钮） --- */
 .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    padding-bottom: 10px;
+    padding-bottom: 12px;
+}
+
+.card-head-main {
+    min-width: 0;
+}
+
+.card-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* 章节编号：Georgia 衬线 + 宽字距，给三大板块一点"章回"秩序感 */
+.card-index {
+    font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Times New Roman', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    color: var(--card-accent);
+    opacity: 0.62;
 }
 
 .guide-card h3 {
@@ -181,11 +274,30 @@ body.ready .nutrition-card { animation-delay: 0.34s; }
 .section-en {
     font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Times New Roman', serif;
     font-style: italic;
-    color: rgba(212, 175, 55, 0.5);
+    color: var(--card-accent);
+    opacity: 0.62;
     font-size: 0.82rem;
     letter-spacing: 1.5px;
-    margin-top: 4px;
+    margin-top: 5px;
 }
+
+/* --- 板块纹章：与背景影像同源的波形线 ---
+   睡眠=慢波呼吸，运动=心电脉冲，营养=有机起伏。两端遮罩淡出，像从暗场里浮出的肌理 */
+.card-wave {
+    display: block;
+    width: 100%;
+    height: 46px;
+    margin: -2px 0 2px;
+    color: var(--card-accent);
+    opacity: 0.30;
+    filter: drop-shadow(0 0 10px var(--card-glow));
+    -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0), #000 14%, #000 86%, rgba(0, 0, 0, 0));
+    mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0), #000 14%, #000 86%, rgba(0, 0, 0, 0));
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.guide-card:hover .card-wave { opacity: 0.5; }
 
 /* --- 通用内容样式 --- */
 .core-advice {
@@ -195,34 +307,74 @@ body.ready .nutrition-card { animation-delay: 0.34s; }
 }
 
 .advice-item {
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 12px;
-    padding: 18px 15px;
+    position: relative;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 15px 15px 15px 24px;
     display: flex;
-    gap: 15px;
+    gap: 14px;
     align-items: flex-start;
-    transition: background 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    overflow: hidden;
+    transition: background 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+                border-color 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* 左侧一道个性色竖脊：hover 时点亮并微微抽长 */
+.advice-item::before {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 15px;
+    bottom: 15px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--card-line);
+    opacity: 0.45;
+    transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .advice-item:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03));
+    border-color: rgba(255, 255, 255, 0.085);
 }
 
+.advice-item:hover::before {
+    opacity: 1;
+    transform: scaleY(1.12);
+}
+
+/* 分隔线：两端淡出，不再是通长的实线 */
 .divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.06);
-    margin: 10px 0;
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.10) 18%,
+        rgba(255, 255, 255, 0.10) 82%, rgba(255, 255, 255, 0));
+    margin: 4px 0;
 }
 
+/* 图标从裸字形收进一枚带内高光的方砖，个性色只在砖内点亮 */
 .advice-item > i {
-    font-size: 1.8rem;
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
-    color: var(--accent);
-    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    width: 38px;
+    height: 38px;
+    font-size: 1.15rem;
+    border-radius: 11px;
+    color: var(--card-accent);
+    background: radial-gradient(120% 120% at 28% 18%, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                border-color 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                box-shadow 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .advice-item:hover > i {
-    transform: scale(1.1) rotate(5deg);
+    transform: translateY(-1px) scale(1.06);
+    border-color: var(--card-line);
+    box-shadow: 0 0 16px -4px var(--card-glow);
 }
 
 .advice-text h4 {
@@ -245,50 +397,183 @@ body.ready .nutrition-card { animation-delay: 0.34s; }
 }
 
 /* ============================================================
-   施压选择系统（运动板块）
+   常驻周进度条：无论达没达成都在，周一零点随周 key 自动归零重建
    ============================================================ */
+.week-strip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: background 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+                border-color 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+                color 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+}
 
-/* 标题旁的小 toggle 按钮 */
+.week-label {
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+/* 周一 ~ 周日七颗点，高强度日点亮成金，今天套一圈描边 */
+.week-dots {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 auto 0 4px;
+}
+
+.week-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.13);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    transition: background 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                box-shadow 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.week-dot.today {
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.22);
+}
+
+.week-dot.on {
+    background: linear-gradient(180deg, #f6df9a, #d4af37);
+    box-shadow: 0 0 9px rgba(212, 175, 55, 0.55);
+}
+
+.week-dot.on.today {
+    box-shadow: 0 0 9px rgba(212, 175, 55, 0.55), 0 0 0 3px rgba(212, 175, 55, 0.22);
+}
+
+.week-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 达成：整条烧成暗金 */
+.week-strip.achieved {
+    color: #f9d76a;
+    border-color: rgba(212, 175, 55, 0.35);
+    background: linear-gradient(180deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.045));
+}
+
+.week-strip.pop {
+    animation: badgePop 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* 存储不可用（无痕模式等）：不假装已记录，明确告知 */
+.week-strip.no-store {
+    color: #e8a06a;
+    border-color: rgba(232, 160, 106, 0.32);
+    background: linear-gradient(180deg, rgba(232, 160, 106, 0.12), rgba(232, 160, 106, 0.03));
+}
+
+/* ============================================================
+   施压按钮：右对齐，做成一枚有厚度的实体按钮
+   ——顶部内高光受光、底部投影落地、按下时下沉 1px 且投影塌缩
+   ============================================================ */
 .hi-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 12px;
-    border-radius: 99px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 7px;
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0.17) 0%,
+        rgba(255, 255, 255, 0.07) 55%,
+        rgba(255, 255, 255, 0.03) 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.30),
+        0 6px 14px -8px rgba(0, 0, 0, 0.9),
+        0 2px 0 rgba(0, 0, 0, 0.35);
     color: var(--text-muted);
     cursor: pointer;
     font-family: var(--font-sans);
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     white-space: nowrap;
+    transform: translateY(0);
     transition:
         background 0.22s cubic-bezier(0.32, 0.72, 0, 1),
         border-color 0.22s cubic-bezier(0.32, 0.72, 0, 1),
         color 0.22s cubic-bezier(0.32, 0.72, 0, 1),
+        box-shadow 0.22s cubic-bezier(0.32, 0.72, 0, 1),
         transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* 火苗在熄灭状态也留一点余温，暗示这枚按钮一直通着电 */
 .hi-toggle i {
-    font-size: 0.9rem;
+    font-size: 1rem;
+    color: rgba(217, 180, 90, 0.85);
+    transition: color 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.hi-toggle:hover i {
+    color: #f0cf7d;
+}
+
+.hi-toggle.active i {
+    color: inherit;
 }
 
 .hi-toggle:hover {
-    border-color: rgba(212, 175, 55, 0.35);
     color: var(--text-main);
+    border-color: rgba(217, 180, 90, 0.5);
+    transform: translateY(-1px);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.30),
+        0 10px 20px -10px rgba(0, 0, 0, 0.95),
+        0 2px 0 rgba(0, 0, 0, 0.35),
+        0 0 18px -6px rgba(212, 175, 55, 0.45);
 }
 
+/* 按下：实体下沉，投影收干净 */
 .hi-toggle:active {
-    transform: scale(0.96);
+    transform: translateY(1px);
+    box-shadow:
+        inset 0 2px 7px rgba(0, 0, 0, 0.5),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* 选中：烈火金 */
+.hi-toggle:focus-visible {
+    outline: 2px solid rgba(212, 175, 55, 0.75);
+    outline-offset: 3px;
+}
+
+/* 选中：整块烧成烈火金，字转为深墨以获得实心对比 */
 .hi-toggle.active {
-    border-color: #d4af37;
-    background: rgba(212, 175, 55, 0.13);
-    color: #f9d76a;
-    box-shadow: 0 0 14px rgba(212, 175, 55, 0.25);
+    background: linear-gradient(180deg, #f6df9a 0%, #d4af37 58%, #b8912a 100%);
+    border-color: rgba(255, 238, 190, 0.7);
+    color: #17120a;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.65),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+        0 6px 18px -6px rgba(212, 175, 55, 0.55),
+        0 0 22px rgba(212, 175, 55, 0.28);
+}
+
+.hi-toggle.active:hover {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.75),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+        0 10px 24px -8px rgba(212, 175, 55, 0.6),
+        0 0 30px rgba(212, 175, 55, 0.4);
 }
 
 .hi-toggle.active i {
@@ -301,49 +586,173 @@ body.ready .nutrition-card { animation-delay: 0.34s; }
     60%      { transform: scale(1.05); opacity: 1; }
 }
 
-/* --- 本周目标徽章（≥2 次时显示在标题旁） --- */
-.goal-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #141005;
-    background: linear-gradient(135deg, #f6e8a8, #d4af37);
-    padding: 3px 10px;
-    border-radius: 99px;
-    box-shadow: 0 0 16px rgba(212, 175, 55, 0.45);
-    white-space: nowrap;
-}
-
-.goal-badge.pop {
-    animation: badgePop 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
 @keyframes badgePop {
     0%   { transform: scale(0); }
     70%  { transform: scale(1.08); }
     100% { transform: scale(1); }
 }
 
-/* --- 滚动条样式 --- */
-.guide-card::-webkit-scrollbar { width: 6px; }
-.guide-card::-webkit-scrollbar-track { background: transparent; }
-.guide-card::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
-.guide-card::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+/* ============================================================
+   云同步状态条：安静地待在卷轴末尾，不与三章内容争焦点
+   ============================================================ */
+.sync-bar {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 22px 9vh;
+    font-family: var(--font-sans);
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
 
-/* --- 移动端适配 --- */
+.sync-bar[hidden] { display: none; }
+
+.sync-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+}
+
+.sync-line > i {
+    font-size: 0.95rem;
+    color: rgba(143, 163, 192, 0.85);
+}
+
+.sync-note {
+    color: rgba(134, 134, 139, 0.72);
+    font-size: 0.72rem;
+}
+
+/* 状态点：金=已同步 / 呼吸=同步中 / 橙=失败 */
+.sync-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.18);
+    transition: background 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.sync-dot.idle    { background: rgba(212, 175, 55, 0.55); }
+.sync-dot.ok      { background: linear-gradient(180deg, #f6df9a, #d4af37); box-shadow: 0 0 7px rgba(212, 175, 55, 0.5); }
+.sync-dot.error   { background: #e8a06a; }
+.sync-dot.syncing { background: rgba(212, 175, 55, 0.75); animation: syncPulse 1.1s ease-in-out infinite; }
+
+@keyframes syncPulse {
+    0%, 100% { opacity: 0.3; }
+    50%      { opacity: 1; }
+}
+
+.sync-btn {
+    margin-left: auto;
+    padding: 5px 11px;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04));
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.22s cubic-bezier(0.32, 0.72, 0, 1),
+                color 0.22s cubic-bezier(0.32, 0.72, 0, 1),
+                transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.sync-btn:hover { border-color: rgba(217, 180, 90, 0.5); color: #f0cf7d; }
+.sync-btn:active { transform: translateY(1px); }
+.sync-btn:focus-visible { outline: 2px solid rgba(212, 175, 55, 0.7); outline-offset: 2px; }
+
+.sync-btn.ghost { background: none; border-color: rgba(255, 255, 255, 0.1); color: var(--text-muted); }
+.sync-btn.ghost:hover { color: var(--text-main); }
+
+.sync-btn.danger { color: #d99a86; border-color: rgba(217, 154, 134, 0.28); }
+.sync-btn.danger:hover { color: #f0b39c; border-color: rgba(217, 154, 134, 0.5); }
+
+/* 独占一行的按钮回到左对齐，否则会被 margin-left:auto 推到右边 */
+.sync-field > .sync-btn:only-child { margin-left: 0; }
+
+.sync-line.err { color: #e8a06a; border-color: rgba(232, 160, 106, 0.3); }
+.sync-line.err > i { color: #e8a06a; }
+
+.sync-panel {
+    margin-top: 10px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(12, 12, 16, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sync-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sync-field-label { color: var(--text-muted); }
+
+.sync-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    color: #f0cf7d;
+    padding: 5px 9px;
+    border-radius: 8px;
+    background: rgba(212, 175, 55, 0.09);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    word-break: break-all;
+}
+
+.sync-tip {
+    margin: 0;
+    color: rgba(134, 134, 139, 0.85);
+    font-size: 0.72rem;
+    line-height: 1.65;
+}
+
+.sync-input {
+    flex: 1 1 180px;
+    min-width: 0;
+    padding: 7px 10px;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+}
+
+.sync-input::placeholder {
+    color: rgba(134, 134, 139, 0.7);
+    letter-spacing: 0;
+    font-family: var(--font-sans);
+}
+
+.sync-input:focus { outline: none; border-color: rgba(217, 180, 90, 0.45); }
+
+/* --- 窄屏适配：收窄留白与呼吸间距 --- */
 @media (max-width: 1024px) {
     .wild-dashboard {
-        grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 48px;
+        padding: 10vh 18px 12vh;
     }
 
-    .exercise-card,
-    .nutrition-card,
-    .sleep-card {
-        grid-column: 1 / -1;
+    .guide-card {
+        padding: 22px 18px 24px;
+    }
+
+    .sync-bar {
+        padding: 0 18px 8vh;
     }
 }
 
