@@ -175,8 +175,10 @@
     flex-direction: column;
     gap: 14px;
     box-shadow: 0 30px 70px -50px rgba(0, 0, 0, 0.9);
-    opacity: 0;
-    transform: translateY(34px);
+    /* 默认完全可见：入场揭示只负责"加一段动画"，不负责"让内容出现"。
+       旧版默认 opacity:0 且靠 JS 回调点亮，初始化前段一抛错就整页全黑 */
+    opacity: 1;
+    transform: none;
     transition: border-color 0.4s cubic-bezier(0.25, 1, 0.5, 1),
                 box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
@@ -200,13 +202,15 @@
     box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.95);
 }
 
-/* 滚动即叙事：板块滚入视区才被点亮（由 JS 的 IntersectionObserver 加 .in） */
+/* 滚动即叙事：板块滚入视区时播一段入场动画（由 IntersectionObserver 加 .in）。
+   起止都写在关键帧里，所以没有 .in 的卡片就是"已就位"的样子，不存在留白 */
 .guide-card.in {
-    animation: fadeInUp 0.7s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    animation: fadeInUp 0.7s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 @keyframes fadeInUp {
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(34px); }
+    to   { opacity: 1; transform: none; }
 }
 
 /* --- 章节色 ---
@@ -439,17 +443,27 @@
                 box-shadow 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+/* 今天：一圈中性描边 —— 不与两极的色抢意义，只标记"这是今天" */
 .week-dot.today {
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.22);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22);
 }
 
-.week-dot.on {
+.week-dot.hi {
     background: linear-gradient(180deg, #f6df9a, #d4af37);
     box-shadow: 0 0 9px rgba(212, 175, 55, 0.55);
 }
 
-.week-dot.on.today {
-    box-shadow: 0 0 9px rgba(212, 175, 55, 0.55), 0 0 0 3px rgba(212, 175, 55, 0.22);
+.week-dot.gather {
+    background: linear-gradient(180deg, #b6dcc6, #6fa88b);
+    box-shadow: 0 0 9px rgba(111, 168, 139, 0.5);
+}
+
+.week-dot.hi.today {
+    box-shadow: 0 0 9px rgba(212, 175, 55, 0.55), 0 0 0 3px rgba(255, 255, 255, 0.22);
+}
+
+.week-dot.gather.today {
+    box-shadow: 0 0 9px rgba(111, 168, 139, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.22);
 }
 
 .week-count {
@@ -460,16 +474,10 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* 达成：整条烧成暗金 */
-.week-strip.achieved {
-    color: #f9d76a;
-    border-color: rgba(212, 175, 55, 0.35);
-    background: linear-gradient(180deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.045));
-}
-
-.week-strip.pop {
-    animation: badgePop 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-}
+/* 两极各自的计数：各染自己那一味的色，达成后加粗换字 */
+.week-count.hi     { color: rgba(217, 180, 90, 0.92); }
+.week-count.gather { color: rgba(126, 182, 152, 0.95); }
+.week-count.done   { font-weight: 600; }
 
 /* 存储不可用（无痕模式等）：不假装已记录，明确告知 */
 .week-strip.no-store {
@@ -479,14 +487,49 @@
 }
 
 /* ============================================================
-   施压按钮：右对齐，做成一枚有厚度的实体按钮
-   ——顶部内高光受光、底部投影落地、按下时下沉 1px 且投影塌缩
+   两择按钮组：杠铃的两极，一天只能按下其中一个
+   ——实体按钮语法：顶部内高光受光、底部投影落地、按下时下沉 1px
+   每一极各持一味色（金=施压之火 / 苔绿=采集之野），由 [data-kind] 注入，
+   换肤时只需改这四行变量，按钮结构不必动
    ============================================================ */
-.hi-toggle {
+.day-toggle-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.day-toggle[data-kind="hi"] {
+    --opt: #d9b45a;
+    --opt-line: rgba(217, 180, 90, 0.5);
+    --opt-glow: rgba(212, 175, 55, 0.45);
+    --opt-halo: rgba(212, 175, 55, 0.28);
+    --opt-halo-strong: rgba(212, 175, 55, 0.4);
+    --opt-a: #f6df9a;
+    --opt-b: #d4af37;
+    --opt-c: #b8912a;
+    --opt-ink: #17120a;
+    --opt-ink-line: rgba(255, 238, 190, 0.7);
+}
+
+.day-toggle[data-kind="gather"] {
+    --opt: #6fa88b;
+    --opt-line: rgba(111, 168, 139, 0.5);
+    --opt-glow: rgba(111, 168, 139, 0.42);
+    --opt-halo: rgba(111, 168, 139, 0.28);
+    --opt-halo-strong: rgba(111, 168, 139, 0.4);
+    --opt-a: #b6dcc6;
+    --opt-b: #6fa88b;
+    --opt-c: #4f8070;
+    --opt-ink: #0b1a14;
+    --opt-ink-line: rgba(214, 240, 226, 0.62);
+}
+
+.day-toggle {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    margin-left: auto;
     flex-shrink: 0;
     padding: 10px 16px;
     border-radius: 12px;
@@ -516,68 +559,77 @@
         transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* 火苗在熄灭状态也留一点余温，暗示这枚按钮一直通着电 */
-.hi-toggle i {
+/* 余温：未选中时图标也留住那一极的色，暗示按钮一直通着电 */
+.day-toggle i {
     font-size: 1rem;
-    color: rgba(217, 180, 90, 0.85);
-    transition: color 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+    color: var(--opt);
+    opacity: 0.85;
+    transition: color 0.22s cubic-bezier(0.32, 0.72, 0, 1),
+                opacity 0.22s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.hi-toggle:hover i {
-    color: #f0cf7d;
-}
+.day-toggle:hover i { opacity: 1; }
 
-.hi-toggle.active i {
-    color: inherit;
-}
-
-.hi-toggle:hover {
+.day-toggle:hover {
     color: var(--text-main);
-    border-color: rgba(217, 180, 90, 0.5);
+    border-color: var(--opt-line);
     transform: translateY(-1px);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.22),
         inset 0 -1px 0 rgba(0, 0, 0, 0.30),
         0 10px 20px -10px rgba(0, 0, 0, 0.95),
         0 2px 0 rgba(0, 0, 0, 0.35),
-        0 0 18px -6px rgba(212, 175, 55, 0.45);
+        0 0 18px -6px var(--opt-glow);
 }
 
 /* 按下：实体下沉，投影收干净 */
-.hi-toggle:active {
+.day-toggle:active {
     transform: translateY(1px);
     box-shadow:
         inset 0 2px 7px rgba(0, 0, 0, 0.5),
         inset 0 -1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.hi-toggle:focus-visible {
-    outline: 2px solid rgba(212, 175, 55, 0.75);
+.day-toggle:focus-visible {
+    outline: 2px solid var(--opt);
     outline-offset: 3px;
 }
 
-/* 选中：整块烧成烈火金，字转为深墨以获得实心对比 */
-.hi-toggle.active {
-    background: linear-gradient(180deg, #f6df9a 0%, #d4af37 58%, #b8912a 100%);
-    border-color: rgba(255, 238, 190, 0.7);
-    color: #17120a;
+/* 本周已达成：即便今天没选它，也让这一极持续亮着 */
+.day-toggle.done {
+    color: var(--opt);
+    border-color: var(--opt-line);
+}
+
+/* 今天选中：整块烧成这一极的实色，字转为深墨以获得实心对比 */
+.day-toggle.active {
+    background: linear-gradient(180deg, var(--opt-a) 0%, var(--opt-b) 58%, var(--opt-c) 100%);
+    border-color: var(--opt-ink-line);
+    color: var(--opt-ink);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.65),
         inset 0 -1px 0 rgba(0, 0, 0, 0.22),
-        0 6px 18px -6px rgba(212, 175, 55, 0.55),
-        0 0 22px rgba(212, 175, 55, 0.28);
+        0 6px 18px -6px var(--opt-glow),
+        0 0 22px var(--opt-halo);
 }
 
-.hi-toggle.active:hover {
+.day-toggle.active:hover {
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.75),
         inset 0 -1px 0 rgba(0, 0, 0, 0.22),
-        0 10px 24px -8px rgba(212, 175, 55, 0.6),
-        0 0 30px rgba(212, 175, 55, 0.4);
+        0 10px 24px -8px var(--opt-glow),
+        0 0 30px var(--opt-halo-strong);
 }
 
-.hi-toggle.active i {
+.day-toggle.active i {
+    color: inherit;
+    opacity: 1;
     animation: flicker 1.6s ease-in-out infinite;
+}
+
+/* 达成瞬间弹一下：只驱动一次，由 JS 显式传入刚达成的那一极 */
+.day-toggle.pop {
+    animation: badgePop 0.5s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @keyframes flicker {
