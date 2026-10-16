@@ -830,48 +830,6 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     box-shadow: 0 0 10px currentColor;
 }
 
-/* 动效开关：挂在读数行末尾，视觉重量压到最低（它不该跟"今天是什么状态"抢），
-   但它是"我什么都没看到"时唯一的出路 —— 系统关了动画时，
-   页面上不会有任何东西提示你这里本该有动效 */
-.amb-motion {
-    flex: 0 0 auto;
-    margin-left: 10px;
-    appearance: none;
-    padding: 1px 7px;
-    border: 1px solid rgba(236, 241, 248, 0.14);
-    border-radius: 999px;
-    background: none;
-    cursor: pointer;
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    line-height: 1.5;
-    color: rgba(236, 241, 248, 0.30);
-    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
-}
-
-.amb-motion:hover {
-    color: var(--text-dim);
-    border-color: rgba(236, 241, 248, 0.34);
-}
-
-.amb-motion:focus-visible { outline: 2px solid rgba(236, 241, 248, 0.5); outline-offset: 3px; }
-
-/* 开着的时候给它一点这一页的绿 —— 和"采集是默认态"同一套语汇 */
-.amb-motion[data-on="1"] {
-    color: rgba(143, 211, 176, 0.68);
-    border-color: rgba(78, 143, 114, 0.42);
-}
-
-.amb-motion-min {
-    display: none;
-    /* 窄屏那一版没有边框，靠这条点状下划线告诉人它是能点的。
-       用 text-decoration 而不是 border —— 它不占横向宽度，
-       而窄屏读数行正好卡满，一个像素都匀不出来 */
-    text-decoration: underline dotted;
-    text-underline-offset: 2px;
-}
-
 .amb-state[data-state="hi"]     { color: rgba(255, 179, 122, 0.92); }
 .amb-state[data-state="gather"] { color: rgba(143, 211, 176, 0.92); }
 
@@ -1193,19 +1151,10 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     .amb-hint { display: none; }
 
     /* 读数行在这一档要和一周天象并排，是全页最挤的一格：
-       开关收成纯文字、去掉边框与内距，状态词的字距也收一档。
-       再给它 overflow:hidden 兜一道 —— 万一用户把系统字号调大，
-       宁可内部裁掉一点，也不能撑破这一格去挤天象 */
+       状态词的字距收一档，再给它 overflow:hidden 兜一道 ——
+       万一用户把系统字号调大，宁可内部裁掉一点，
+       也不能撑破这一格去挤天象 */
     .amb-state { font-size: 10px; letter-spacing: 0.1em; overflow: hidden; }
-    .amb-motion {
-        margin-left: 6px;
-        padding: 0;
-        border: 0;
-        font-size: 9px;
-        letter-spacing: 0.08em;
-    }
-    .amb-motion-full { display: none; }
-    .amb-motion-min { display: inline; }
 }
 
 /* 分栏只有在放得下时才成立。窄屏退回"标签在上、正文在下"的堆叠 ——
@@ -1240,66 +1189,15 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
 }
 
 /* ------------------------------------------------------------
-   关闭动效的判据：只认 html[data-motion="off"]
+   这里原本有一整组 html[data-motion="off"] 的降级规则
+   （把呼吸、换季色、粒子、开场的动画全部压到 0.01ms，
+   再把开场的三行解开重合、退回竖排），配套的是 motion.js 里那个总闸
+   和读数行末尾的「动效」按钮。
 
-   这里先前挂着一份系统级"减少动画"媒体查询的兜底（prefers-reduced-motion）——
-   现在删掉了，而且是有意的：**页面默认就是动的，系统那个开关不参与判断。**
+   整组连同开关一起删了。理由写在 motion.js 的「没有总闸」一节：
+   动效是设计的一部分，做了就是给人看的，不是一份需要管理的设置。
 
-   理由在 motion.js 的「总闸」一节写得详细，一句话版本是：
-   这台机器的 Windows 关了「动画效果」，浏览器如实上报 reduce，
-   于是整个场一片死寂，而屏幕上没有任何东西告诉用户"本该有动效"。
-   一个用户可能根本不知道它存在过的系统开关，不该悄悄决定这一页长什么样。
-
-   现在要静止，只有一个入口：读数行末尾那个「动效」按钮。
-   它写进 localStorage，下次打开还是静的 —— 那个选择是看得见的。
-
-   代价说清楚：前庭功能敏感的人如果依赖系统设置，这一页不会替他们静止，
-   得自己点一下那个按钮。这一条是用户明确要求的取舍，不是疏忽。
+   代码上它也已经走不到 —— data-motion 这个属性只可能由 JS 写上，
+   而 JS 没跑起来时页面本来就是动的，这些选择器不会有任何一帧被匹配到。
+   留着就是死代码，还会让人误以为"页面支持静止态"。
    ------------------------------------------------------------ */
-html[data-motion="off"] .amb-breath,
-html[data-motion="off"] .amb-intro,
-html[data-motion="off"] .amb-shock,
-html[data-motion="off"] .amb-pole.is-pop .amb-pole-orb {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-}
-
-html[data-motion="off"] .amb-wash,
-html[data-motion="off"] .amb-intro,
-html[data-motion="off"] .amb-pole-orb,
-html[data-motion="off"] .amb-week-dot,
-html[data-motion="off"] .amb-state { transition-duration: 0.01ms; }
-
-html[data-motion="off"] .amb-field.is-kick::after { animation: none; }
-
-/* 关掉动效时，开场退回"一帧静态的宣言"：三行都在、三个句点亮着，
-   到点整块淡出。绝不能让它变成一块空屏幕 ——
-   逐词动画的终态是"可见"，可它的 animation-duration 被上面那条压到
-   0.01ms 之后，动画会瞬间跳到终态；三行原本靠 delay 才逐句出现，
-   一压平就全在，正好就是想要的那一帧。
-
-   但三行现在是重合在同一个格子里的（动的时候轮流上台，静止时就会叠成一坨），
-   所以这一档要把重合解开、退回竖排，静态地摆出完整的三句 */
-html[data-motion="off"] .amb-intro-lockup { row-gap: 0.1em; }
-
-html[data-motion="off"] .amb-intro-line {
-    grid-area: auto;
-    opacity: 1;
-    filter: none;
-    transform: none;
-    animation: none;
-}
-
-html[data-motion="off"] .amb-intro-line > span {
-    opacity: 1;
-    transform: none;
-    filter: none;
-    animation: none;
-}
-
-html[data-motion="off"] .amb-intro-rule { transform: scaleX(1); animation: none; }
-html[data-motion="off"] .amb-intro::after { display: none; }
-
-/* 粒子层在关掉时整个不画。它本来就不会启动（particles.js 见到 off 直接返回），
-   这里再兜一道：万一它被别处唤醒，也画不到屏幕上去 */
-html[data-motion="off"] .amb-veil { display: none; }

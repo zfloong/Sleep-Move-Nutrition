@@ -30,30 +30,23 @@
   if (window.SMN_MOTION) return;
 
   /* ------------------------------------------------------------
-     总闸：默认开，只有用户自己关过才关
+     没有总闸，也没有动效开关
 
-     这里判断过一次。原来默认跟随系统的 prefers-reduced-motion ——
-     尊重无障碍设置本身是对的，但实际后果是：这台机器 Windows 关了
-     「动画效果」（MinAnimate = 0），浏览器如实上报 reduce，
-     于是整个场——呼吸、换季色、粒子——一起消失，屏幕上安静得像一张图，
-     而页面上没有任何东西提示"这里本该有动效"。
-     （实测确认过：不是无头浏览器的假象，是系统设置真的如此。）
+     这里曾经挂着两块东西：一个 html[data-motion] 总闸，和一个写在
+     读数行末尾、往 localStorage 里存 'off' 的小按钮。整块删掉了。
 
-     现在：**默认开**。判据只认用户自己的显式选择 —— 那个小开关写下的
-     'off'。要静止就点一下，那是明确的、看得见的、存得下的一个动作，
-     比一个用户可能从来不知道它存在过的系统开关更靠得住。
+     走过来的路：最早默认跟随系统的 prefers-reduced-motion，结果是这台机器
+     （Windows 关了「动画效果」，MinAnimate = 0）上整个场 —— 呼吸、换季色、
+     粒子 —— 一起消失，屏幕上安静得像一张图。于是改成"默认开，给个按钮可以关"。
+
+     但那个按钮本身就是错的。它把一件本该无条件发生的事，变成了一个需要用户
+     去理解、去管理的状态 —— 宽屏那版写着「动效 · 开」，等于在页面上承认
+     "这东西是可选的"。动效是设计的一部分，做了就是给人看的，不是一份设置。
+
+     所以：无开关、无总闸、无 localStorage。CSS 里那组
+     html[data-motion="off"] 的降级规则也一并删了 —— 判据只可能来自 JS，
+     而 JS 挂了页面本来就是动的，那条分支根本走不到，留着就是死代码。
      ------------------------------------------------------------ */
-  const KEY = 'smn.motion';
-  let pref = null;
-  try { pref = localStorage.getItem(KEY); } catch (e) { /* 无痕模式：读不到就当作没设过 */ }
-
-  /* 只留着写按钮提示用，不再参与判断 —— 页面已经开始忽略它了 */
-  const sysReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const OFF = pref === 'off';
-
-  /* CSS 侧的呼吸、换季色也跟着这个总闸走 ——
-     它们原本挂在媒体查询上，而媒体查询没法被页面里的按钮覆盖 */
-  document.documentElement.dataset.motion = OFF ? 'off' : 'on';
 
   const clamp = (v, a, b) => (v < a ? a : (v > b ? b : v));
   /* §7.1 帧率无关的一阶跟随。k 是"紧度"（1/s），不是每帧比例 ——
@@ -99,7 +92,7 @@
     ptrY = (e.clientY / innerHeight - 0.5) * 2;
   }
 
-  if (!OFF && field) {
+  if (field) {
     window.addEventListener('pointermove', onPointer, { passive: true });
 
     subscribe((dt) => {
@@ -117,7 +110,7 @@
   /* 开场那三行也跟着指针让一点：幅度只有场的一半 ——
      字要是晃得和光一样多，读起来就散了。开场那层被移除之后就自己摘掉 */
   const introLockup = document.querySelector('.amb-intro-lockup');
-  if (!OFF && introLockup) {
+  if (introLockup) {
     let ix = 0, iy = 0;
     const introSub = (dt) => {
       if (!introLockup.isConnected) { unsubscribe(introSub); return; }
@@ -189,14 +182,12 @@
   }
 
   let lastState = document.body.dataset.state;
-  if (!OFF) {
-    new MutationObserver(() => {
-      const s = document.body.dataset.state;
-      if (s === lastState) return;
-      lastState = s;
-      shock(s);
-    }).observe(document.body, { attributes: true, attributeFilter: ['data-state'] });
-  }
+  new MutationObserver(() => {
+    const s = document.body.dataset.state;
+    if (s === lastState) return;
+    lastState = s;
+    shock(s);
+  }).observe(document.body, { attributes: true, attributeFilter: ['data-state'] });
 
   /* ============================================================
      ③ 开关球：欠阻尼弹簧
@@ -230,7 +221,7 @@
       balls.push({ orb, s: from, v: 0 });
     });
 
-    if (!balls.length || OFF) return;
+    if (!balls.length) return;
 
     ballSub = (dt) => {
       /* 每帧 0.915 的衰减换算成帧率无关的形式 ——
@@ -267,71 +258,38 @@
     entries = Array.prototype.slice.call(document.querySelectorAll('.amb-entries'));
   }
 
-  if (!OFF) {
-    subscribe((dt) => {
-      const y = window.scrollY;
-      const moved = y !== lastY;
-      /* 彻底静止、且倾斜已经真的归零了，这一帧只花一次读数。
-         注意判据必须是 appliedTilt（已经写出去的值）而不是 tilt 本身 ——
-         用 tilt 的话它会卡在 0.006 那一档上再也回不了 0，
-         于是页面上永远留着 0.2 度歪着不动的字 */
-      if (!moved && appliedTilt === 0 && Math.abs(tilt) < 0.002) return;
+  subscribe((dt) => {
+    const y = window.scrollY;
+    const moved = y !== lastY;
+    /* 彻底静止、且倾斜已经真的归零了，这一帧只花一次读数。
+       注意判据必须是 appliedTilt（已经写出去的值）而不是 tilt 本身 ——
+       用 tilt 的话它会卡在 0.006 那一档上再也回不了 0，
+       于是页面上永远留着 0.2 度歪着不动的字 */
+    if (!moved && appliedTilt === 0 && Math.abs(tilt) < 0.002) return;
 
-      sVel = follow(sVel, (y - lastY) / Math.max(dt, 1e-3), 10, dt);
-      lastY = y;
+    sVel = follow(sVel, (y - lastY) / Math.max(dt, 1e-3), 10, dt);
+    lastY = y;
 
-      /* 视差由"元素在视口里的位置"驱动，不由滚动速度驱动 */
-      const vh = innerHeight || 1;
-      for (const g of ghosts) {
-        const r = g.getBoundingClientRect();
-        const p = clamp((r.top + r.height / 2) / vh, -0.3, 1.3);
-        g.style.transform = `translate3d(0, ${((0.5 - p) * 34).toFixed(1)}px, 0)`;
-      }
+    /* 视差由"元素在视口里的位置"驱动，不由滚动速度驱动 */
+    const vh = innerHeight || 1;
+    for (const g of ghosts) {
+      const r = g.getBoundingClientRect();
+      const p = clamp((r.top + r.height / 2) / vh, -0.3, 1.3);
+      g.style.transform = `translate3d(0, ${((0.5 - p) * 34).toFixed(1)}px, 0)`;
+    }
 
-      /* §2 速度耦合：滚多快，正文歪多少；停下时 tilt 自己衰减归零。
-         40px/s 的死区是必须的 —— 速度滤波是指数衰减，永远回不到绝对值 0，
-         没有死区的话页面静止后字会一直歪着零点几度不动 */
-      const want = Math.abs(sVel) < 40 ? 0 : clamp(sVel * 0.0013, -0.75, 0.75);
-      tilt = follow(tilt, want, 10, dt);
-      const t = Math.abs(tilt) > 0.006 ? tilt : 0;
-      if (t !== appliedTilt) {
-        appliedTilt = t;
-        const v = t ? `skewY(${t.toFixed(3)}deg)` : '';
-        for (const e of entries) e.style.transform = v;
-      }
-    });
-  }
-
-  /* ------------------------------------------------------------
-     动效开关：读数行末尾那一个小按钮
-     页面默认就是动的，所以它现在的职责变成"我想让它停" ——
-     夜里、专注时、电量见底时，一个动作就能让整页安静下来，
-     而且这个选择存得住（下次打开还是静的）。
-     ------------------------------------------------------------ */
-  function mountSwitch() {
-    const host = document.querySelector('.amb-state');
-    if (!host || host.querySelector('.amb-motion')) return;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'amb-motion';
-    btn.dataset.on = OFF ? '0' : '1';
-    /* 两套文案：宽屏给全 "动效 · 开"，窄屏收成 "动效"（状态靠颜色区分）——
-       窄屏读数行要和一周天象并排，是这一页里最挤的一格 */
-    btn.innerHTML = `<span class="amb-motion-full">动效 · ${OFF ? '关' : '开'}</span>`
-                  + `<span class="amb-motion-min">动效</span>`;
-    btn.setAttribute('aria-label', OFF ? '打开动效' : '关闭动效');
-    btn.title = OFF
-      ? '动效已关，整页静止。点一下打开。'
-      : (sysReduce
-          ? '动效已开。系统设置了「减少动画效果」，本页忽略了它 —— 点一下可以让页面安静下来。'
-          : '动效已开。点一下关闭，页面就静下来了。');
-    btn.addEventListener('click', () => {
-      try { localStorage.setItem(KEY, OFF ? 'on' : 'off'); } catch (e) { /* 存不了就算了 */ }
-      window.location.reload();      /* 整层要重开，重载比就地拆装可靠 */
-    });
-    host.appendChild(btn);
-  }
+    /* §2 速度耦合：滚多快，正文歪多少；停下时 tilt 自己衰减归零。
+       40px/s 的死区是必须的 —— 速度滤波是指数衰减，永远回不到绝对值 0，
+       没有死区的话页面静止后字会一直歪着零点几度不动 */
+    const want = Math.abs(sVel) < 40 ? 0 : clamp(sVel * 0.0013, -0.75, 0.75);
+    tilt = follow(tilt, want, 10, dt);
+    const t = Math.abs(tilt) > 0.006 ? tilt : 0;
+    if (t !== appliedTilt) {
+      appliedTilt = t;
+      const v = t ? `skewY(${t.toFixed(3)}deg)` : '';
+      for (const e of entries) e.style.transform = v;
+    }
+  });
 
   /* ------------------------------------------------------------
      挂载：DOM 重建后重新收集
@@ -347,14 +305,11 @@
       queued = false;
       collectScroll();
       bindBalls();
-      mountSwitch();
     });
   }
 
   window.SMN_MOTION = {
     mount: mount,
-    off: OFF,
-    systemReduce: sysReduce,
     /* 下面几个是给粒子层用的。它要和这一层共用一条 rAF、
        共用同一套帧率无关的跟随 —— 自己另起一条 rAF 的话，
        两层的节奏会在掉帧时错开，看起来就是"各动各的" */
@@ -365,7 +320,7 @@
     onShock: (fn) => { shockHooks.push(fn); }
   };
 
-  function init() { collectScroll(); bindBalls(); mountSwitch(); }
+  function init() { collectScroll(); bindBalls(); }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

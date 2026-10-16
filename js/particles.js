@@ -43,10 +43,6 @@
   const cv = field && field.querySelector('.amb-veil');
   if (!cv || !cv.getContext) return;
 
-  /* 关掉动效时整层不启动 —— canvas 留白，页面上什么都不画。
-     场自己的呼吸与换季色由 CSS 那组 html[data-motion="off"] 接管 */
-  if (M.off) return;
-
   const ctx = cv.getContext('2d', { alpha: true });
   if (!ctx) return;
 
