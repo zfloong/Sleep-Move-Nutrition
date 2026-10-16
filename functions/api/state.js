@@ -6,8 +6,9 @@
    不需要注册登录。KV 键：state:<码>
 
    数据格式：
-     { weeks: { "2026-W41": { "2": {v:1, t:1759...} } } }
-     v=1 已标记高强度 / v=0 已取消（墓碑，让"取消"也能跨设备传播）
+     { weeks: { "2026-W41": { "2": {v:2, t:1759...} } } }
+     v=1 高强度锻炼日 / v=2 模拟采集日 / v=0 取消（墓碑）
+       —— 一天只存一个值，两种日子天然互斥
      t=写入时刻(ms)，多端合并时按天取 t 最大者
 
    GET  → 读回云端数据（无码时返回 configured:false，供前端探测能力）
@@ -27,22 +28,31 @@ const json = (data, status = 200) =>
     }
   });
 
+/* 单日取值白名单：1=高强度 / 2=模拟采集 / 0=取消。
+   其余一律归 0 —— 客户端不可信，脏值不落库也不参与计数 */
+const normV = (v) => (v === 1 ? 1 : v === 2 ? 2 : 0);
+
+const WEEK_RE = /^\d{4}-W\d{2}$/;
+const isDayIdx = (d) => /^[0-6]$/.test(d);
+
 /* 按天取 t 最大者；周 key 形如 YYYY-Www，字典序即时间序 */
 function mergeWeeks(a, b) {
   const out = {};
   for (const src of [a, b]) {
     if (!src || typeof src !== 'object') continue;
     for (const wk of Object.keys(src)) {
+      if (!WEEK_RE.test(wk)) continue;          // 只认本站写出的周 key
       const days = src[wk];
       if (!days || typeof days !== 'object') continue;
       const target = out[wk] || (out[wk] = {});
       for (const d of Object.keys(days)) {
+        if (!isDayIdx(d)) continue;             // 只认周一 ~ 周日
         const rec = days[d];
         if (!rec || typeof rec !== 'object') continue;
         const t = Number(rec.t) || 0;
         const prev = target[d];
         if (!prev || t >= (Number(prev.t) || 0)) {
-          target[d] = { v: rec.v === 1 ? 1 : 0, t };
+          target[d] = { v: normV(rec.v), t };
         }
       }
     }
