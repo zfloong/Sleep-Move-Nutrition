@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>狂野生长</title>
+    <meta name="description" content="睡眠 · 运动 · 营养。你不在使用一个网页，你在看一个状态 —— 采集是每日默认，施压才需要按下。">
+    <meta name="theme-color" content="#05070A">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="stylesheet" href="css/ambient.css">
+</head>
+<body data-state="none">
+
+    <!-- 状态场：三层漂移的光 + 一次呼吸 + 两片换季色 + 颗粒。
+         整页的"季节"由 body[data-state] 决定，纯 CSS 交叉淡替，不改任何结构 -->
+    <div class="amb-field" aria-hidden="true">
+        <span class="amb-orb amb-orb--1"></span>
+        <span class="amb-orb amb-orb--2"></span>
+        <span class="amb-orb amb-orb--3"></span>
+        <span class="amb-breath"></span>
+        <span class="amb-wash amb-wash--hi"></span>
+        <span class="amb-wash amb-wash--gather"></span>
+        <span class="amb-embers">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </span>
+        <span class="amb-pollens">
+            <i></i><i></i><i></i><i></i><i></i>
+        </span>
+        <span class="amb-horizon"></span>
+        <span class="amb-grain"></span>
+    </div>
+
+    <!-- 开场：场已经在了，三句哲思从场里浮出，再散回场里 -->
+    <div class="amb-intro" id="introOverlay">
+        <div class="amb-intro-lines">
+            <p class="amb-intro-line" data-line="1">Remove the harm.</p>
+            <p class="amb-intro-line" data-line="2">Apply the stress.</p>
+            <p class="amb-intro-line" data-line="3">Let what recovers recover.</p>
+        </div>
+    </div>
+
+    <main class="amb-page">
+        <section id="exercise" class="amb-chapter" aria-label="运动"></section>
+        <section id="sleep" class="amb-chapter" aria-label="睡眠"></section>
+        <section id="nutrition" class="amb-chapter" aria-label="营养"></section>
+    </main>
+
+    <footer class="sync-bar" id="syncBar" hidden></footer>
+
+    <script src="js/content.js"></script>
+    <script src="js/view-ambient.js"></script>
+    <script src="js/wild.js"></script>
+</body>
+</html>
