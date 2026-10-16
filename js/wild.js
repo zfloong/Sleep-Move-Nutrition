@@ -5,9 +5,9 @@
 
    本文件是【引擎】，不含任何具体版式：
      存储 · 云同步 · 周键与跨天逻辑 · 开场白编排 · 交互接线
-   版式由页面上加载的视图提供（window.SMN_VIEW），两套视图共用本引擎：
-     js/view-cards.js   原版三卡片（对照基线）
-     js/view-ambient.js 环境界面
+   版式由页面上加载的视图提供（window.SMN_VIEW）：
+     js/view-ambient.js 环境界面（当前主页）
+   视图可插拔：换一套版式只需换这一个文件，引擎与内容不必动。
 
    视图契约（三个方法 + 两个可选）：
      renderExercise(ctx) / renderSleep(ctx) / renderNutrition(ctx)
@@ -18,10 +18,10 @@
      defaultKind  可选：声明"哪一极是默认态"（如 'gather'）。
        声明后，今天若没有显式记录，就自动落在这一极上 ——
        即"每日漫步自动点亮，只有主动施压的那一天才会变"。
-       不声明则保持原样：没记录就是没记录（cards 基线不受影响）。
+       不声明则保持原样：没记录就是没记录。
      "今天的二选一"按钮必须带 class="day-toggle" 与 data-kind="hi|gather"
 
-   内容全部来自 js/content.js（window.SMN_CONTENT），两套视图共用一份文案。
+   内容全部来自 js/content.js（window.SMN_CONTENT），视图与引擎共用一份文案。
    ========================================= */
 (function () {
   'use strict';
@@ -376,7 +376,6 @@
     if (SYNC.mode === 'local') {
       el.innerHTML = `
         <div class="sync-line">
-          <i class="ri-hard-drive-2-line"></i>
           <span>本地记录</span>
           <span class="sync-note">${SYNC.reason || '记录只保存在这台设备的浏览器里'}</span>
         </div>`;
@@ -391,7 +390,6 @@
 
     el.innerHTML = `
       <div class="sync-line${SYNC.status === 'error' ? ' err' : ''}">
-        <i class="ri-cloud-line"></i>
         <span class="sync-dot ${SYNC.status}"></span>
         <span>${label}</span>
         <button class="sync-btn ghost" data-act="toggle" type="button">${SYNC.panel ? '收起' : (on ? '同步码' : '设置')}</button>

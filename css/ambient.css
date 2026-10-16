@@ -707,8 +707,6 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
     border-top: 1px solid var(--hair);
 }
 
-.sync-line > i { display: none; }
-
 .sync-note { color: rgba(233, 238, 245, 0.24); }
 
 .sync-dot {
