@@ -4,9 +4,23 @@
    整页由一套"状态场"承载：未选=夜雾 / 高强度=火焰态 / 采集=苔原态。
    换季不是按钮反馈，而是整片环境的 1.8s 过渡。
    背景一律用径向渐变直接绘制（不用 filter: blur），只动 transform 与 opacity。
+
+   【v4】
+   · 场里砍掉了三颗缓慢漂移的蓝紫光球 —— 纯装饰，与"两极"无关。
+     现在场里只剩两件事：一次呼吸（空间本身是活的）、
+     两片换季色（暖=施压 / 冷=采集，颜色终于有了语义）。
+   · 去掉三章的滚动淡入。同一套登场动作重复三次，
+     读者到第三块就学会无视它了。
+   · 三章各长一种形状，版心不再共用一条全局居中列。
    ============================================================ */
 
 :root {
+    /* 这一页只认一种底色，那就认到底：不声明 color-scheme 的话，
+       滚动条、光标、原生表单控件会按浅色渲染，在暗色页上格外刺眼 */
+    color-scheme: dark;
+    accent-color: var(--ember);
+    caret-color: var(--ember-lit);
+
     --void: #05070A;
 
     --text:       rgba(236, 241, 248, 0.96);
@@ -25,12 +39,22 @@
     /* 控制台底色（RGB 分量）：比 void 略提一点，读得出是一层"台面" */
     --deck-rgb: 7, 9, 13;
 
+    /* 全出血的侧距。页面不再有一条全局居中列 —— 正文一直铺到这条线为止，
+       行宽改由每一章自己声明（见下方三章版口）。窄屏收到 22px，宽屏最多 104px */
+    --gutter: clamp(22px, 5vw, 104px);
+
     --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
             "Source Han Sans SC", "Noto Sans CJK SC", "Segoe UI", Roboto, sans-serif;
     --serif: "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", "SimSun", serif;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 
     --ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+    /* 一条带过冲的弹簧曲线。cubic-bezier 表达不了"冲过去、再落回"，
+       linear() 可以 —— 把采样点列出来即可，不必为此引入动画库。
+       开关被推到那一侧时，这一点回弹就是"手感"，也是它区别于
+       普通 CSS 默认过渡的地方（默认过渡是匀速或简单缓入缓出，像塑料） */
+    --spring: linear(0, 0.32 8%, 0.79 20%, 1.03 30%, 1.01 46%, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -38,6 +62,8 @@
 html {
     -webkit-text-size-adjust: 100%;
     overflow-x: clip;
+    /* 滚动条出现或消失时先预留等宽的空档，页面不会左右跳一下 */
+    scrollbar-gutter: stable;
 }
 
 body {
@@ -52,8 +78,26 @@ body {
 
 ::selection { background: rgba(224, 138, 74, 0.28); }
 
+/* 视觉上隐去、读屏照读（比 display:none 好在它不把内容摘出无障碍树）。
+   页面的 h1 用它 —— 显示层让位给章节名，语义层不能少这一级 */
+.vh {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
 /* ============================================================
-   状态场：三层漂移的光 + 一次呼吸 + 两片换季色 + 颗粒
+   状态场：一次呼吸 + 两片换季色 + 一层粒子
+   这里曾经漂着三颗蓝紫色的光球，纯装饰、与"两极"毫无关系，
+   也正是那种一眼能认出来的模板味。砍掉之后场里只剩下有语义的东西：
+   一次呼吸（空间本身是活的）、两片换季色（暖=施压 / 冷=采集），
+   以及一层粒子（风的方向：余烬往上、孢子横漂）。
    ============================================================ */
 .amb-field {
     position: fixed;
@@ -63,50 +107,16 @@ body {
     pointer-events: none;
 }
 
-.amb-orb {
-    position: absolute;
-    border-radius: 50%;
-    will-change: transform;
-}
+/* 唯一还在动的东西。没有它就只剩两片静态的色，空场也像在呼吸。
 
-.amb-orb--1 {
-    width: 82vmax; height: 82vmax; left: -24vmax; top: -30vmax;
-    background: radial-gradient(circle at 50% 50%, rgba(88, 122, 176, 0.22), rgba(88, 122, 176, 0) 62%);
-    animation: drift1 46s ease-in-out infinite;
-}
-
-.amb-orb--2 {
-    width: 68vmax; height: 68vmax; right: -22vmax; top: 6vmax;
-    background: radial-gradient(circle at 50% 50%, rgba(122, 100, 164, 0.17), rgba(122, 100, 164, 0) 64%);
-    animation: drift2 63s ease-in-out infinite;
-}
-
-.amb-orb--3 {
-    width: 96vmax; height: 96vmax; left: -12vmax; bottom: -48vmax;
-    background: radial-gradient(circle at 50% 50%, rgba(56, 108, 108, 0.17), rgba(56, 108, 108, 0) 66%);
-    animation: drift3 54s ease-in-out infinite;
-}
-
-@keyframes drift1 {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    50%      { transform: translate3d(5vw, 4vh, 0) scale(1.09); }
-}
-
-@keyframes drift2 {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
-    50%      { transform: translate3d(-6vw, 5vh, 0) scale(1); }
-}
-
-@keyframes drift3 {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    50%      { transform: translate3d(4vw, -3vh, 0) scale(1.07); }
-}
-
-/* 一次极慢的呼吸：整片场随之内收外放 */
+   --fx / --fy 由动效层每帧写入（指针位置 + 速度耦合的过冲）——
+   光晕跟着指针走，指针甩得快它就多冲出去一点，停下自己收回来。
+   没有 JS 时这两个变量取回退值 0%，场就停在正中，和以前一模一样 */
 .amb-breath {
     position: absolute;
     inset: -8%;
-    background: radial-gradient(58% 46% at 50% 46%, rgba(206, 220, 244, 0.06), rgba(206, 220, 244, 0) 70%);
+    background: radial-gradient(58% 46% at calc(50% + var(--fx, 0%)) calc(46% + var(--fy, 0%)),
+        rgba(206, 220, 244, 0.06), rgba(206, 220, 244, 0) 70%);
     animation: breath 11s ease-in-out infinite;
 }
 
@@ -115,7 +125,8 @@ body {
     50%      { transform: scale(1.07); opacity: 1; }
 }
 
-/* 换季色：两片各自独立，靠透明度交叉淡替，所以过渡是连续的 */
+/* 换季色也跟着指针偏，但幅度只有呼吸光的十分之几 ——
+   这两片是"季节"，不该满场乱跑，略有一点视差就够它像一层景 */
 .amb-wash {
     position: absolute;
     inset: 0;
@@ -125,85 +136,90 @@ body {
 
 .amb-wash--hi {
     background:
-        radial-gradient(120% 78% at 50% 108%, rgba(224, 138, 74, 0.36), rgba(224, 138, 74, 0) 58%),
-        radial-gradient(78% 58% at 50% 0%, rgba(255, 180, 120, 0.11), rgba(255, 180, 120, 0) 62%);
+        radial-gradient(120% 78% at calc(50% + var(--fx, 0%) * 0.3) calc(108% + var(--fy, 0%) * 0.35),
+            rgba(224, 138, 74, 0.36), rgba(224, 138, 74, 0) 58%),
+        radial-gradient(78% 58% at calc(50% + var(--fx, 0%) * 0.6) calc(0% + var(--fy, 0%) * 0.5),
+            rgba(255, 180, 120, 0.11), rgba(255, 180, 120, 0) 62%);
 }
 
 .amb-wash--gather {
     background:
-        radial-gradient(130% 84% at 50% 106%, rgba(78, 143, 114, 0.34), rgba(78, 143, 114, 0) 60%),
-        radial-gradient(88% 66% at 50% 0%, rgba(143, 211, 176, 0.09), rgba(143, 211, 176, 0) 64%);
+        radial-gradient(130% 84% at calc(50% + var(--fx, 0%) * 0.3) calc(106% + var(--fy, 0%) * 0.35),
+            rgba(78, 143, 114, 0.34), rgba(78, 143, 114, 0) 60%),
+        radial-gradient(88% 66% at calc(50% + var(--fx, 0%) * 0.6) calc(0% + var(--fy, 0%) * 0.5),
+            rgba(143, 211, 176, 0.09), rgba(143, 211, 176, 0) 64%);
 }
 
 body[data-state="hi"]     .amb-wash--hi     { opacity: 1; }
 body[data-state="gather"] .amb-wash--gather { opacity: 1; }
 
-/* 火焰态上升的余烬 / 苔原态横漂的孢子：不用时把动画暂停，不占 GPU */
-.amb-embers,
-.amb-pollens {
+/* 换季那一下的冲击闪光。单独一层，不去动 breath 或 wash 的动画 ——
+   借别人的关键帧来播自己的脉冲，最后一定会打架 */
+.amb-field::after {
+    content: "";
     position: absolute;
     inset: 0;
     opacity: 0;
-    transition: opacity 1.6s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    background: radial-gradient(62% 52% at 50% 50%,
+        rgba(236, 241, 248, 0.11), rgba(236, 241, 248, 0) 72%);
 }
 
-body[data-state="hi"]     .amb-embers  { opacity: 1; }
-body[data-state="gather"] .amb-pollens { opacity: 1; }
+.amb-field.is-kick::after { animation: kickFlash 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
 
-.amb-embers i {
+@keyframes kickFlash {
+    0%   { opacity: 0.9; }
+    100% { opacity: 0; }
+}
+
+/* 按下开关时从指尖扩散出去的一圈柔光。
+   用 46vmax 的柔光圆整块放大，而不是描一个环再 scale ——
+   scale 会把 1px 的边框一起放大成 60px 的厚边，那不是涟漪，那是抹了一片 */
+.amb-shock {
     position: absolute;
-    bottom: -4vh;
-    width: 3px; height: 3px;
+    width: 46vmax;
+    height: 46vmax;
+    margin: -23vmax 0 0 -23vmax;
     border-radius: 50%;
-    background: var(--ember-lit);
-    box-shadow: 0 0 9px rgba(255, 179, 122, 0.9);
     opacity: 0;
-    animation: emberRise 15s linear infinite;
-    animation-play-state: paused;
+    transform: scale(0.02);
+    background: radial-gradient(circle,
+        rgba(236, 241, 248, 0.26), rgba(236, 241, 248, 0.10) 42%, rgba(236, 241, 248, 0) 70%);
+    animation: shockWave 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-body[data-state="hi"] .amb-embers i { animation-play-state: running; }
-
-.amb-embers i:nth-child(1) { left: 12%; animation-duration: 15s; animation-delay: 0s; }
-.amb-embers i:nth-child(2) { left: 26%; animation-duration: 19s; animation-delay: 2.4s; }
-.amb-embers i:nth-child(3) { left: 41%; animation-duration: 13s; animation-delay: 5.1s; }
-.amb-embers i:nth-child(4) { left: 55%; animation-duration: 21s; animation-delay: 1.2s; }
-.amb-embers i:nth-child(5) { left: 68%; animation-duration: 16s; animation-delay: 7.6s; }
-.amb-embers i:nth-child(6) { left: 81%; animation-duration: 18s; animation-delay: 3.8s; }
-.amb-embers i:nth-child(7) { left: 92%; animation-duration: 14s; animation-delay: 9.4s; }
-
-@keyframes emberRise {
-    0%   { transform: translate3d(0, 0, 0) scale(1);    opacity: 0; }
-    14%  { opacity: 0.9; }
-    70%  { opacity: 0.5; }
-    100% { transform: translate3d(22px, -106vh, 0) scale(0.5); opacity: 0; }
+.amb-shock.is-hi {
+    background: radial-gradient(circle,
+        rgba(255, 179, 122, 0.30), rgba(255, 179, 122, 0.11) 42%, rgba(255, 179, 122, 0) 70%);
 }
 
-.amb-pollens i {
+.amb-shock.is-gather {
+    background: radial-gradient(circle,
+        rgba(143, 211, 176, 0.28), rgba(143, 211, 176, 0.10) 42%, rgba(143, 211, 176, 0) 70%);
+}
+
+@keyframes shockWave {
+    0%   { transform: scale(0.02); opacity: 0.95; }
+    55%  { opacity: 0.55; }
+    100% { transform: scale(1);    opacity: 0; }
+}
+
+/* 粒子层。这里原来是一串 <span>，每颗靠一条固定关键帧走自己的轨道 ——
+   7 颗余烬、5 颗孢子，读起来是"几个小点在循环"，不是空气。
+   现在整层交给一块 canvas（js/particles.js）：每颗粒子带深度，
+   数量按屏幕面积给，换季时在暖/冷之间交叉淡替而不是整体切换。
+
+   CSS 这一边只负责让它待在正确的层，别的什么都不做 ——
+   粒子是每帧画上去的，交给 CSS 只会得到又一次插值。
+   pointer-events 会从 .amb-field 继承下来，这里写出来是为了明示：
+   这一层绝不能吃掉指针，否则下面的文字和按钮就点不到了 */
+.amb-veil {
     position: absolute;
-    left: -6vw;
-    width: 4px; height: 4px;
-    border-radius: 50%;
-    background: var(--moss-lit);
-    box-shadow: 0 0 10px rgba(143, 211, 176, 0.72);
-    opacity: 0;
-    animation: pollenDrift 30s linear infinite;
-    animation-play-state: paused;
-}
-
-body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
-
-.amb-pollens i:nth-child(1) { top: 22%; animation-duration: 30s; animation-delay: 0s; }
-.amb-pollens i:nth-child(2) { top: 41%; animation-duration: 38s; animation-delay: 6s; }
-.amb-pollens i:nth-child(3) { top: 58%; animation-duration: 26s; animation-delay: 12s; }
-.amb-pollens i:nth-child(4) { top: 71%; animation-duration: 44s; animation-delay: 3s; }
-.amb-pollens i:nth-child(5) { top: 86%; animation-duration: 34s; animation-delay: 18s; }
-
-@keyframes pollenDrift {
-    0%   { transform: translate3d(0, 0, 0);       opacity: 0; }
-    18%  { opacity: 0.55; }
-    82%  { opacity: 0.35; }
-    100% { transform: translate3d(112vw, -7vh, 0); opacity: 0; }
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
 
 .amb-horizon {
@@ -221,63 +237,220 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
 }
 
 /* ============================================================
-   开场：场先在，三句哲思从场里浮出，再散回场里
+   开场：场先在，三句箴言一句一句上台，演完一起散回景深
+
+   三条都是命令句，读完才成句：
+     Remove the harm. / Apply the stress. / Let what recovers recover.
+
+   三句是**轮流上台**，不是"一句一句加上去"：
+   第一句逐词从景深里浮出来 → 停住让人读完 → 整句退回景深 → 第二句才起 →……
+   三行占**同一个格子**（grid-area: 1 / 1）完全重合，
+   所以屏幕上任何时刻都只存在一句话，而且位置固定、不跳动 ——
+   竖排的话第一句还亮在顶上、第三句已经出现在半屏以下，读者得追着字跑。
+
+   时间轴全在这几个变量里（都声明在 .amb-intro-lockup 上）：
+     --word-in    一个词从景深浮到清晰
+     --word-step  词与词的错拍
+     --line-life  一句从上台到开始退场（浮出 + 读完的停留）
+     --line-out   整句退回景深
+     --line-cycle 相邻两句的间隔，必须大于 life + out（自检守着这一条）
+   某一行的 --d 就是它上台的时刻，三档等距，各差一个 --line-cycle。
+
+   字号用 cqw 而不是 vw：它的基准是这一层的**内容盒**（也就是版心），
+   字号永远按"版心有多宽"来定，顺带绕开 vw 把滚动条一起算进去、
+   导致最后一个字母被 overflow-x: clip 静默裁掉的老毛病。
+   左缘与正文共用同一条 --gutter —— 遮罩散开时，版口一格都不动。
    ============================================================ */
 .amb-intro {
     position: fixed;
     inset: 0;
     z-index: 100;
+    container-type: inline-size;
     display: grid;
-    place-items: center;
-    transition: opacity 0.9s cubic-bezier(0.77, 0, 0.175, 1),
-                visibility 0s linear 0.9s;
-    animation: ambIntroFailsafe 0.9s linear 5.4s forwards;
+    align-content: center;
+    padding: 0 var(--gutter);
+    /* 压暗整个场，只留一点微光与粒子 ——
+       不加这一层的话，背后那三章（编号、正文、读数行）会直接跟宣言抢注意力，
+       "开场"就变成了"在一张已经读得清的页面上叠了一段字"。
+       中心 0.76 压得住正文、仍留得住场的暖冷；边缘 0.94 把顶部轨道也收干净 */
+    background: radial-gradient(120% 88% at 50% 46%,
+                rgba(5, 7, 10, 0.76) 26%, rgba(5, 7, 10, 0.94) 100%);
+    cursor: pointer;
+    transition: opacity 1s cubic-bezier(0.77, 0, 0.175, 1),
+                transform 1s cubic-bezier(0.77, 0, 0.175, 1),
+                visibility 0s linear 1s;
+    animation: ambIntroFailsafe 1s linear 7.1s forwards;
 }
 
 @keyframes ambIntroFailsafe { to { opacity: 0; visibility: hidden; } }
 
-.amb-intro.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+/* 退场：整块放大着淡掉 —— 像宣言从眼前涨过去、散进景深。
+   只放大不下移：给满屏的遮罩加位移会在屏幕边上撕出一条没压暗的缝 */
+.amb-intro.hide {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: scale(1.06);
+}
 
-.amb-intro-lines {
+/* 场的光：上面那层遮罩把场压掉了七成多，得在这里补回来 ——
+   不补的话开场就只是"黑底白字"，而"场先在、箴言从场里浮出来"就没了。
+   与 ::after 的分工：这一层是常亮的环境光，::after 是四次落位脉冲 */
+.amb-intro::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(78% 52% at 50% 40%, rgba(206, 220, 244, 0.10), rgba(206, 220, 244, 0) 72%),
+        radial-gradient(122% 62% at 50% 104%, rgba(78, 143, 114, 0.17), rgba(78, 143, 114, 0) 62%),
+        radial-gradient(96% 46% at 50% -6%, rgba(255, 180, 120, 0.07), rgba(255, 180, 120, 0) 60%);
+}
+
+/* 每一次落位，场跟着亮一下。四次脉冲对应三句 + 收尾那条线。
+   峰值的刻度跟着三句上台的时刻走：0.6s / 2.4s / 4.2s / 5.7s。
+   峰值很低（0.13 的径向渐变），是"空间应了一声"，不是闪光灯 */
+.amb-intro::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(44% 32% at 50% 50%,
+                rgba(214, 228, 248, 0.13), rgba(214, 228, 248, 0) 72%);
+    opacity: 0;
+    animation: ambBloom 6s linear forwards;
+}
+
+@keyframes ambBloom {
+    0%, 4%    { opacity: 0; }
+    10%       { opacity: 1; }
+    17%       { opacity: 0; }
+    34%       { opacity: 0; }
+    40%       { opacity: 1; }
+    47%       { opacity: 0; }
+    64%       { opacity: 0; }
+    71%       { opacity: 1; }
+    78%       { opacity: 0; }
+    92%       { opacity: 0; }
+    95%       { opacity: 0.5; }
+    100%      { opacity: 0; }
+}
+
+/* 收尾那条线：从版心正中向两侧长出来，长满即开场结束。
+   它现在是整场的进度线 —— 三句演完刚好长满，
+   落在与正文底部那条地平线相同的位置，遮罩退掉时"线留下"，接得上 */
+.amb-intro-rule {
+    position: absolute;
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+                rgba(236, 241, 248, 0), rgba(236, 241, 248, 0.26), rgba(236, 241, 248, 0));
+    transform: scaleX(0);
+    animation: ambRule 5.53s linear 0.12s forwards;
+}
+
+@keyframes ambRule { to { transform: scaleX(1); } }
+
+/* 三行是同一段话，所以同一个字号、同一条左缘。
+   但因为它们是轮流上台的，三行**占同一个格子**：grid-area 全写成 1 / 1，
+   重合在一起，谁也顶不开谁。每行自己折行（窄屏上第三句会断成两行） */
+.amb-intro-lockup {
+    --intro-fs: clamp(1.9rem, 7cqw, 8.2rem);
+    --word-in: 0.78s;
+    --word-step: 48ms;
+    --line-life: 1.3s;
+    --line-out: 0.46s;
+    --line-cycle: 1.82s;
+    font-size: var(--intro-fs);
     display: grid;
-    place-items: center;
-    padding: 0 26px;
+    /* 三行顶部对齐，不是拉伸（stretch）。
+       拉伸会在窄屏上出事：第三句断成两行时那一格有两个字高，
+       只有一行的第一句被拉高之后，里面的字怎么摆要看 flex 的行盒，
+       结果就是三句各自的垂直位置对不上。顶部对齐把它们钉在同一条线上 */
+    align-items: start;
+    justify-items: start;
 }
 
 .amb-intro-line {
     grid-area: 1 / 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.26em;
     margin: 0;
-    text-align: center;
-    font-size: clamp(1.5rem, 3.2vw, 2.3rem);
     font-weight: 200;
-    letter-spacing: 0.06em;
-    color: #F2F5FA;
-    opacity: 0;
-    will-change: opacity, filter, transform;
-    animation: ambLine 1.5s var(--ease) forwards;
+    line-height: 1.06;
+    letter-spacing: 0.03em;
+    color: #EEF3F9;
+    /* 整句退场：词是一个一个上来的，下去时合成一句一起走 ——
+       "读完一句"是个完整动作，逐词退回会读成结巴。
+       退场不能落到 0% 之外：类名一挂上就接管 opacity，句子才有明确的"不在" */
+    opacity: 1;
+    animation: ambLineOut var(--line-out) cubic-bezier(0.55, 0, 0.68, 0.19) forwards;
+    animation-delay: calc(var(--d) + var(--line-life));
 }
 
-.amb-intro-line[data-line="1"] { animation-delay: 0.8s; }
-.amb-intro-line[data-line="2"] { animation-delay: 1.9s; }
-.amb-intro-line[data-line="3"] { animation-delay: 3.0s; }
+/* 逐词入场：每个词自己从下面浮上来、模糊收清。
+   词间 48ms —— 再少就糊成整体淡入，再多会读成一顿一顿 */
+.amb-intro-line > span {
+    display: block;
+    opacity: 0;
+    transform: translate3d(0, 0.72em, 0);
+    filter: blur(13px);
+    animation: ambWord var(--word-in) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--d) + var(--i, 0) * var(--word-step));
+}
 
-@keyframes ambLine {
-    0%   { opacity: 0; filter: blur(9px); transform: scale(1.03);
-           text-shadow: 0 0 60px rgba(255, 236, 214, 0.6); }
-    44%  { opacity: 1; filter: blur(0);   transform: none; text-shadow: 0 0 0 rgba(255, 255, 255, 0); }
-    74%  { opacity: 1; filter: blur(0);   transform: none; text-shadow: 0 0 0 rgba(255, 255, 255, 0); }
-    100% { opacity: 0; filter: blur(9px); transform: scale(0.99); text-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+/* 上台时刻。间距 = --line-cycle（1.82s），也就是
+   "浮出 0.78 + 停留 1.3 + 退净 0.46 + 一点空白" ——
+   第二句起来时第一句已经彻底不在场上了，正是要的"消失之后再来" */
+.amb-intro-line[data-line="1"] { --d: 0.25s; }
+.amb-intro-line[data-line="2"] { --d: 2.07s; }
+.amb-intro-line[data-line="3"] { --d: 3.89s; }
+
+/* --i 是词在句里的序位。写到 5，因为最长那句是
+   "Let what recovers recover ." —— 五个 span，句点自己也算一格。
+   漏掉第 5 格的话，句点会拿默认的 0，抢在第一个词之前亮起来 */
+.amb-intro-line > span:nth-child(1) { --i: 0; }
+.amb-intro-line > span:nth-child(2) { --i: 1; }
+.amb-intro-line > span:nth-child(3) { --i: 2; }
+.amb-intro-line > span:nth-child(4) { --i: 3; }
+.amb-intro-line > span:nth-child(5) { --i: 4; }
+
+/* 句点单独一格：它自己排在最后一个词之后，词间那道间距要抵消掉，
+   不然三个句号会各自飘在离句子半格远的地方 */
+.amb-intro-line > span:last-child {
+    margin-left: -0.26em;
+    color: rgba(255, 179, 122, 0.86);   /* 全篇唯一的暖色，也是两极语言的第一笔 */
+}
+
+@keyframes ambWord {
+    0%   { opacity: 0; transform: translate3d(0, 0.72em, 0); filter: blur(13px); }
+    34%  { opacity: 1; }
+    100% { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* 一句读完，整句一起退回景深：继续往上走、重新散焦。
+   幅度比入场小（0.42em 对 0.72em）—— 入场是"从景深里浮上来"，
+   退场是"被读掉、往前飘走"，不是把入场倒放 */
+@keyframes ambLineOut {
+    0%   { opacity: 1; transform: none; filter: blur(0); }
+    100% { opacity: 0; transform: translate3d(0, -0.42em, 0); filter: blur(11px); }
 }
 
 /* ============================================================
    正文：没有容器，只有层
+   此前这里压着一条 780px 的全局居中列，三章挤在同一条轴上 ——
+   翻到下一章，版口一点没变，也就没有"换场"这回事。
+   现在版心全出血，行宽由每一章自己声明，运动章铺得开、睡眠章收得拢，
+   翻页时版口会跟着换。
    ============================================================ */
 .amb-page {
     position: relative;
     z-index: 10;
-    max-width: 780px;
-    margin: 0 auto;
-    padding: calc(var(--rail-h) + clamp(56px, 11vh, 128px)) 32px clamp(72px, 13vh, 132px);
+    padding: calc(var(--rail-h) + clamp(56px, 11vh, 128px)) var(--gutter) clamp(72px, 13vh, 132px);
 }
 
 .amb-chapter { padding: clamp(90px, 17vh, 170px) 0; }
@@ -285,13 +458,31 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
 /* 最后一章不必再留一个满额的天间距 */
 .amb-chapter:last-child { padding-bottom: clamp(28px, 5vh, 56px); }
 
+/* ------------------------------------------------------------
+   三章各自的版口
+   一页里三块用同一套骨架，读者读到第三块就学会无视它了。
+   所以三章的落位、行宽、骨架全都不同：
+
+     exercise   铺开 1060px，贴左  —— 仪表
+     sleep      收拢  640px，居中  —— 碑
+     nutrition  贴左   800px        —— 索引
+
+   三章都从同一条左边缘起步（只有"碑"居中），这样滚动时视线
+   不用反复找起点；版口的差别落在右缘的参差上，而不是版心乱走。
+   窄屏下 max-width 与 auto 边距自然失效，三章一律全宽。
+   ------------------------------------------------------------ */
+#exercise  { max-width: 1060px; }
+#sleep     { max-width: 640px;  margin-inline: auto; }
+#nutrition { max-width: 800px; }
+
 .amb-head {
     position: relative;
     margin-bottom: clamp(40px, 6.5vh, 62px);
     padding-top: clamp(26px, 4vh, 38px);
 }
 
-/* 章节之间一条收口的细线：不是边框，是"翻页"的位置 */
+/* 章节之间一条收口的细线：不是边框，是"翻页"的位置。
+   版心全出血之后，这条线的长度也跟着各章不同 —— 它成了版口本身 */
 .amb-head::before {
     content: "";
     position: absolute;
@@ -315,6 +506,9 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
     color: rgba(236, 241, 248, 0.14);
     pointer-events: none;
     user-select: none;
+    /* 动效层每帧按"它在视口里的位置"给它写一点纵向位移（景深视差）。
+       只有三个元素，先把合成层开出来，免得边滚边建 */
+    will-change: transform;
 }
 
 .amb-head-cn {
@@ -337,6 +531,50 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
     color: var(--text-faint);
 }
 
+/* --- 章节头 · 骨架 A：运动章。编号压在名上，整体靠左 ---
+   （这就是默认那套，这里显式声明它属于"左"的那一种） */
+.amb-head--rail { text-align: left; }
+
+/* --- 章节头 · 骨架 B：睡眠章 = 碑。编号放大居中，名与英文依次居中排下 ---
+   中文加了字距后，末字右边也会多出一份空隙，整行看着偏左；
+   text-indent 把行首推回半格，视觉重量才对得齐 */
+.amb-head--stele { text-align: center; }
+
+.amb-head--stele .amb-head-ghost {
+    font-size: clamp(4.6rem, 13vw, 7.6rem);
+    letter-spacing: -0.02em;
+    color: rgba(236, 241, 248, 0.10);
+}
+
+.amb-head--stele .amb-head-cn {
+    letter-spacing: 0.52em;
+    text-indent: 0.52em;
+}
+
+.amb-head--stele .amb-head-en {
+    margin-top: 22px;
+    letter-spacing: 0.44em;
+    text-indent: 0.44em;
+}
+
+/* --- 章节头 · 骨架 C：营养章 = 索引。编号挪到右上角，缩到页码那么大 --- */
+.amb-head--index { text-align: left; }
+
+.amb-head--index .amb-head-ghost {
+    position: absolute;
+    right: 0;
+    top: clamp(20px, 3vh, 30px);
+    margin: 0;
+    font-size: clamp(2.2rem, 5.4vw, 3.4rem);
+    line-height: 1;
+    color: rgba(236, 241, 248, 0.11);
+}
+
+/* ============================================================
+   条目：三章共用一份 DOM，三条骨架各排各的
+   .amb-entry-h 与 .amb-entry-body 是同级子元素 ——
+   运动章把它们并排，另外两章把它们叠起来
+   ============================================================ */
 .amb-entry {
     padding: 30px 0;
     border-top: 1px solid var(--hair);
@@ -353,9 +591,12 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
     color: var(--text-faint);
 }
 
+/* 行宽用 em 而不是 ch。ch 是数字"0"的宽度，在中文里只抵半个汉字 ——
+   原来的 46ch 其实一行才 23 个汉字，版心一放开右边就空掉一大片。
+   em 正好是一个全角字宽，34em 就是一行 34 个汉字 */
 .amb-entry p {
     margin: 0 0 7px;
-    max-width: 46ch;
+    max-width: 34em;
     font-size: 1.02rem;
     line-height: 1.9;
     color: var(--text-dim);
@@ -371,18 +612,83 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
     color: var(--text);
 }
 
-/* 入场揭示：默认可见，这里只加一段位移与渐显 */
-.amb-chapter.in { animation: ambRise 1.1s var(--ease) both; }
+/* --- 骨架 A · 运动章条目：读数行 ---
+   左侧一列窄标签，右侧正文。标签不再压在正文上方 ——
+   这一章读起来是一串仪表读数，不是几段散文 */
+.amb-entries--rows .amb-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(20px, 3vw, 44px);
+}
 
-@keyframes ambRise {
-    from { opacity: 0; transform: translateY(26px); }
-    to   { opacity: 1; transform: none; }
+.amb-entries--rows .amb-entry-h {
+    flex: 0 0 clamp(112px, 13vw, 168px);
+    margin: 0;
+    /* 与右侧正文的首行对齐：正文行高 1.9 × 1.02rem，首行中线约在 0.5em 处 */
+    padding-top: 0.5em;
+}
+
+.amb-entries--rows .amb-entry-body { flex: 1 1 auto; min-width: 0; }
+
+/* 分栏之后右侧是"读数"而不是散文，行宽可以放宽一档，
+   否则左列标签与正文加起来还填不满版心的一半 */
+.amb-entries--rows .amb-entry p { max-width: 40em; }
+
+/* --- 骨架 B · 睡眠章条目：连续段落流 ---
+   一条线也不要。条目之间只留呼吸的空 —— 这一章本来就该是三章里
+   最安静的一段，分隔线会把碑文切回清单 */
+.amb-entries--flow .amb-entry {
+    border-top: 0;
+    padding: clamp(32px, 5.4vh, 56px) 0;
+}
+
+.amb-entries--flow .amb-entry-h { letter-spacing: 0.36em; }
+
+/* 碑那一章的版心本来就只有 640px，正文让它铺满整条 ——
+   居中收窄的是"碑"本身，不是某一行字 */
+.amb-entries--flow .amb-entry p {
+    max-width: none;
+    font-size: 1.04rem;
+    line-height: 2.05;
+}
+
+/* --- 骨架 C · 营养章条目：编号清单 ---
+   编号内联在标题开头，正文缩进对齐到标题文字的左缘（跳过编号那一格）。
+   分隔线换成点线：清单该有刻度，但不必有框 */
+.amb-entries--list .amb-entry {
+    border-top: 0;
+    border-bottom: 1px dotted rgba(236, 241, 248, 0.14);
+    padding: 24px 0;
+}
+
+.amb-entries--list .amb-entry:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.amb-entry-no {
+    display: inline-block;
+    width: 30px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    color: rgba(236, 241, 248, 0.30);
+}
+
+.amb-entries--list .amb-entry p {
+    padding-left: 30px;
+    max-width: 36em;
 }
 
 /* ============================================================
    常驻层：顶部一条仪表轨（状态 · 两枚开关 · 一周天象）
    它在 DOM 里仍属 #exercise，所以点击照常冒泡到引擎的委托监听上 ——
    不必为它改一行引擎代码。
+
+   ⚠ 运动章内部不得出现任何 transform（入场动画、位移、缩放都不行）：
+   有了它，这一节就成了 fixed 后代的包含块，.amb-hud 的 position:fixed
+   会退化成"相对本节定位" —— 随页面滚走、宽度被压成正文宽，按钮点不到。
    ============================================================ */
 .amb-hud {
     position: fixed;
@@ -524,6 +830,48 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
     box-shadow: 0 0 10px currentColor;
 }
 
+/* 动效开关：挂在读数行末尾，视觉重量压到最低（它不该跟"今天是什么状态"抢），
+   但它是"我什么都没看到"时唯一的出路 —— 系统关了动画时，
+   页面上不会有任何东西提示你这里本该有动效 */
+.amb-motion {
+    flex: 0 0 auto;
+    margin-left: 10px;
+    appearance: none;
+    padding: 1px 7px;
+    border: 1px solid rgba(236, 241, 248, 0.14);
+    border-radius: 999px;
+    background: none;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    line-height: 1.5;
+    color: rgba(236, 241, 248, 0.30);
+    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.amb-motion:hover {
+    color: var(--text-dim);
+    border-color: rgba(236, 241, 248, 0.34);
+}
+
+.amb-motion:focus-visible { outline: 2px solid rgba(236, 241, 248, 0.5); outline-offset: 3px; }
+
+/* 开着的时候给它一点这一页的绿 —— 和"采集是默认态"同一套语汇 */
+.amb-motion[data-on="1"] {
+    color: rgba(143, 211, 176, 0.68);
+    border-color: rgba(78, 143, 114, 0.42);
+}
+
+.amb-motion-min {
+    display: none;
+    /* 窄屏那一版没有边框，靠这条点状下划线告诉人它是能点的。
+       用 text-decoration 而不是 border —— 它不占横向宽度，
+       而窄屏读数行正好卡满，一个像素都匀不出来 */
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+}
+
 .amb-state[data-state="hi"]     { color: rgba(255, 179, 122, 0.92); }
 .amb-state[data-state="gather"] { color: rgba(143, 211, 176, 0.92); }
 
@@ -582,16 +930,35 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
 
 .amb-pole:focus-visible { outline: 2px solid var(--pole); outline-offset: 4px; }
 
+/* 按下时的即时应答。手机上大半交互就是"按住不放"的这一下，
+   缺了它按钮按起来像按在玻璃上（规范里管这叫死交互）。
+   90ms 取自 instant 档 —— 按下必须立刻有反应，等不到缓动走完 */
+.amb-pole:active {
+    transform: scale(0.986);
+    transition-duration: 90ms;
+}
+
 .amb-pole-orb {
     flex: 0 0 auto;
     width: 18px;
     height: 18px;
     border-radius: 50%;
     border: 1px solid rgba(236, 241, 248, 0.34);
-    transition: transform 0.5s var(--ease),
+    transition: transform 0.46s var(--spring),
                 background 0.5s var(--ease),
                 border-color 0.5s var(--ease),
                 box-shadow 0.5s var(--ease);
+}
+
+/* 动效层接管之后，这个球的 transform 每帧都在写 ——
+   CSS 那条 transform 过渡必须让开，否则它会把每帧的写入再插值一次，
+   欠阻尼弹簧又被抹成一条单调的过渡曲线，等于白做。
+   其余三条（颜色、边框、光晕）照旧，那是"状态"，不是"运动" */
+.amb-pole-orb.is-live {
+    transition: background 0.5s var(--ease),
+                border-color 0.5s var(--ease),
+                box-shadow 0.5s var(--ease);
+    will-change: transform;
 }
 
 .amb-pole:hover .amb-pole-orb { border-color: var(--pole); }
@@ -661,16 +1028,21 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
     background: var(--pole);
     border-color: var(--pole-lit);
     box-shadow: 0 0 18px var(--pole);
+    /* 被推到那一侧的小球微微涨一圈，配上 --spring 的过冲，
+       读起来是"咔"地到位，而不是颜色慢慢淡过去 */
+    transform: scale(1.08);
 }
 
 .amb-pole.is-on .amb-pole-count { color: var(--pole-lit); }
 
-.amb-pole.is-pop .amb-pole-orb { animation: orbPulse 0.6s var(--ease); }
+/* 选中那一下，从球心荡开一圈光环。
+   这里刻意只碰 box-shadow、不碰 transform —— 球的 transform 已经交给
+   动效层的弹簧，而 CSS 动画的优先级高于内联样式，抢过来会把弹簧打断 0.6s */
+.amb-pole.is-pop .amb-pole-orb { animation: orbPulse 0.62s cubic-bezier(0.16, 1, 0.3, 1); }
 
 @keyframes orbPulse {
-    0%   { transform: scale(1); }
-    42%  { transform: scale(1.6); }
-    100% { transform: scale(1); }
+    0%   { box-shadow: 0 0 0 0 var(--pole); }
+    100% { box-shadow: 0 0 0 14px transparent; }
 }
 
 .amb-hint {
@@ -683,14 +1055,14 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
 }
 
 /* ============================================================
-   云同步状态条：压到最暗一层，不参与场的叙事
+   云同步状态条：压到最暗一层，不参与场的叙事。
+   同样不再居中收窄 —— 侧距与正文同一套 --gutter，
+   内容与运动章同轴（1120px），页脚不会比正文更窄
    ============================================================ */
 .sync-bar {
     position: relative;
     z-index: 50;
-    max-width: 780px;
-    margin: 0 auto;
-    padding: 0 32px clamp(36px, 7vh, 72px);
+    padding: 0 var(--gutter) clamp(36px, 7vh, 72px);
     font-family: var(--sans);
     font-size: 12px;
     color: var(--text-faint);
@@ -699,6 +1071,7 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
 .sync-bar[hidden] { display: none; }
 
 .sync-line {
+    max-width: 1120px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -744,6 +1117,7 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
 .sync-line.err { color: rgba(255, 179, 122, 0.9); }
 
 .sync-panel {
+    max-width: 1120px;
     margin-top: 12px;
     padding: 16px;
     border: 1px solid var(--hair);
@@ -787,9 +1161,6 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
 .sync-input:focus { outline: none; border-color: rgba(233, 238, 245, 0.42); }
 
 /* ============================================================
-   窄屏
-   ============================================================ */
-/* ============================================================
    窄屏：轨道改成两行 —— 读数与天象在上，两枚开关并排在下。
    提示语在这一档收起来，顶部空间优先留给"今天是什么状态"和两枚开关
    ============================================================ */
@@ -820,27 +1191,115 @@ body[data-state="gather"] .amb-pollens i { animation-play-state: running; }
 
     .amb-week { gap: 8px; }
     .amb-hint { display: none; }
+
+    /* 读数行在这一档要和一周天象并排，是全页最挤的一格：
+       开关收成纯文字、去掉边框与内距，状态词的字距也收一档。
+       再给它 overflow:hidden 兜一道 —— 万一用户把系统字号调大，
+       宁可内部裁掉一点，也不能撑破这一格去挤天象 */
+    .amb-state { font-size: 10px; letter-spacing: 0.1em; overflow: hidden; }
+    .amb-motion {
+        margin-left: 6px;
+        padding: 0;
+        border: 0;
+        font-size: 9px;
+        letter-spacing: 0.08em;
+    }
+    .amb-motion-full { display: none; }
+    .amb-motion-min { display: inline; }
+}
+
+/* 分栏只有在放得下时才成立。窄屏退回"标签在上、正文在下"的堆叠 ——
+   不然左侧那列会吃掉正文一半的宽度 */
+@media (max-width: 720px) {
+    .amb-entries--rows .amb-entry { flex-direction: column; }
+
+    .amb-entries--rows .amb-entry-h {
+        flex: 0 0 auto;
+        margin-bottom: 12px;
+        padding-top: 0;
+    }
+
+    /* 开场的字号分档：cqw 的基准是版心，所以这里的系数其实是
+       "一行想放几个字"。窄屏上第三句自己断成两行，能用的字宽多了一倍，
+       字号可以跟着放大 —— 宽屏那一档的 6.4cqw 拿到手机上是一行两个字，
+       字就缩没了 */
+    .amb-intro-lockup { --intro-fs: clamp(1.5rem, 10cqw, 3.5rem); }
+    .amb-intro-line { line-height: 1.1; }
 }
 
 @media (max-width: 640px) {
-    .amb-page { padding-left: 22px; padding-right: 22px; }
     .amb-head-cn { letter-spacing: 0.3em; }
     .amb-head-ghost { font-size: clamp(4.4rem, 22vw, 7rem); }
     .amb-entry p { font-size: 0.98rem; }
-    .sync-bar { padding: 0 22px clamp(32px, 6vh, 56px); }
+
+    /* 碑那一章的字距单独收一档，否则四个字会在 375px 上折行 */
+    .amb-head--stele .amb-head-cn { letter-spacing: 0.38em; text-indent: 0.38em; }
+    /* 索引那一章的编号格跟着缩，正文的缩进要一起缩，否则对不齐 */
+    .amb-entry-no { width: 24px; }
+    .amb-entries--list .amb-entry p { padding-left: 24px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .amb-orb,
-    .amb-breath,
-    .amb-embers i,
-    .amb-pollens i,
-    .amb-intro,
-    .amb-intro-line,
-    .amb-chapter.in,
-    .amb-pole.is-pop .amb-pole-orb {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-    }
-    .amb-wash, .amb-embers, .amb-pollens, .amb-intro { transition-duration: 0.01ms; }
+/* ------------------------------------------------------------
+   关闭动效的判据：只认 html[data-motion="off"]
+
+   这里先前挂着一份系统级"减少动画"媒体查询的兜底（prefers-reduced-motion）——
+   现在删掉了，而且是有意的：**页面默认就是动的，系统那个开关不参与判断。**
+
+   理由在 motion.js 的「总闸」一节写得详细，一句话版本是：
+   这台机器的 Windows 关了「动画效果」，浏览器如实上报 reduce，
+   于是整个场一片死寂，而屏幕上没有任何东西告诉用户"本该有动效"。
+   一个用户可能根本不知道它存在过的系统开关，不该悄悄决定这一页长什么样。
+
+   现在要静止，只有一个入口：读数行末尾那个「动效」按钮。
+   它写进 localStorage，下次打开还是静的 —— 那个选择是看得见的。
+
+   代价说清楚：前庭功能敏感的人如果依赖系统设置，这一页不会替他们静止，
+   得自己点一下那个按钮。这一条是用户明确要求的取舍，不是疏忽。
+   ------------------------------------------------------------ */
+html[data-motion="off"] .amb-breath,
+html[data-motion="off"] .amb-intro,
+html[data-motion="off"] .amb-shock,
+html[data-motion="off"] .amb-pole.is-pop .amb-pole-orb {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
 }
+
+html[data-motion="off"] .amb-wash,
+html[data-motion="off"] .amb-intro,
+html[data-motion="off"] .amb-pole-orb,
+html[data-motion="off"] .amb-week-dot,
+html[data-motion="off"] .amb-state { transition-duration: 0.01ms; }
+
+html[data-motion="off"] .amb-field.is-kick::after { animation: none; }
+
+/* 关掉动效时，开场退回"一帧静态的宣言"：三行都在、三个句点亮着，
+   到点整块淡出。绝不能让它变成一块空屏幕 ——
+   逐词动画的终态是"可见"，可它的 animation-duration 被上面那条压到
+   0.01ms 之后，动画会瞬间跳到终态；三行原本靠 delay 才逐句出现，
+   一压平就全在，正好就是想要的那一帧。
+
+   但三行现在是重合在同一个格子里的（动的时候轮流上台，静止时就会叠成一坨），
+   所以这一档要把重合解开、退回竖排，静态地摆出完整的三句 */
+html[data-motion="off"] .amb-intro-lockup { row-gap: 0.1em; }
+
+html[data-motion="off"] .amb-intro-line {
+    grid-area: auto;
+    opacity: 1;
+    filter: none;
+    transform: none;
+    animation: none;
+}
+
+html[data-motion="off"] .amb-intro-line > span {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    animation: none;
+}
+
+html[data-motion="off"] .amb-intro-rule { transform: scaleX(1); animation: none; }
+html[data-motion="off"] .amb-intro::after { display: none; }
+
+/* 粒子层在关掉时整个不画。它本来就不会启动（particles.js 见到 off 直接返回），
+   这里再兜一道：万一它被别处唤醒，也画不到屏幕上去 */
+html[data-motion="off"] .amb-veil { display: none; }

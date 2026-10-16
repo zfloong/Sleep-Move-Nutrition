@@ -7,14 +7,10 @@
    撤销则回到采集（苔原态），过渡长达 1.8s ——
    比任何按钮反馈都更接近"环境变了"。
 
-   【v3 整改】
-   1. 控制台从底部移到**顶部**，常驻不隐退 —— 每天都要按的东西，
-      不该让人往下找。正文靠 --rail-h 从顶部让位。
-   2. 声明 defaultKind = 'gather'：**采集/漫步是默认态**，
-      没人按的日子自动落在它上面；只有主动施压的当天才会变成高强度。
-      于是"每天要点一下"变成了"只在加压的那一天按一下"。
-   3. 顶部天象改用引擎给的展示态（marks），默认日以更淡的画法区分
-      "本来就是"与"我真的按过"。
+   【v3】控制台移到顶部常驻；声明 defaultKind = 'gather'，
+   于是"每天要点一下"变成"只在加压的那一天按一下"。
+   【v4】三章各用一套骨架、版心全出血后各自定行宽、
+   去掉滚动淡入与三颗装饰光球（场里只留两片有语义的换季色）。
 
    控制台用 position:fixed 呈现，但 DOM 里仍在 #exercise 内，
    因此点击事件照常冒泡到引擎的委托监听上 —— 不必为它改一行引擎代码。
@@ -24,22 +20,46 @@
 
   const C = window.SMN_CONTENT;
 
-  /* --- 一章：巨大虚影编号 + 章节名 + 英文，下面是条目 --- */
+  /* --- 三章三套骨架 ---
+     一页里三块用同一套骨架，读者读到第三块就学会无视它了。
+     所以三章分别长成三种形状：
+
+       exercise  仪表 —— 章节头压着巨大编号，条目是"读数行"：
+                         左侧一列窄标签，右侧正文，行间有分隔线
+       sleep     碑   —— 章节头居中，条目之间没有一条线，
+                         整章收拢成一个窄版心居中，像刻在石上的一段
+       nutrition 索引 —— 编号挪到章节头右上角，条目是左侧编号列的清单
+
+     骨架由 CSS 按 id 落位，视图只负责声明"这一章是什么形状" */
+  const SKELETON = {
+    exercise:  { head: 'rail',  entries: 'rows', numbered: false },
+    sleep:     { head: 'stele', entries: 'flow', numbered: false },
+    nutrition: { head: 'index', entries: 'list', numbered: true }
+  };
+
+  /* --- 一章：章节头 + 条目，骨架按章取 --- */
   function chapterHTML(id, ctx) {
     const ch = ctx.chapters[id];
-    const entries = ch.entries.map((e) => `
+    const sk = SKELETON[id] || SKELETON.exercise;
+
+    /* 条目一律是「标题 + 正文」两件：
+         .amb-entry-h    标题（索引章的编号内联在它开头）
+         .amb-entry-body 正文
+       两者是同级子元素，所以同一份 DOM 既能被排成左右分栏（运动章），
+       也能排成上下堆叠（睡眠章、营养章）—— 骨架差异全在 CSS 里落位 */
+    const entries = ch.entries.map((e, i) => `
       <section class="amb-entry" data-entry="${e.kind}">
-        <h3 class="amb-entry-h">${e.h}</h3>
-        ${C.resolveParagraphs(e, ctx).map((p) => `<p>${p}</p>`).join('')}
+        <h3 class="amb-entry-h">${sk.numbered ? `<span class="amb-entry-no" aria-hidden="true">${String(i + 1).padStart(2, '0')}</span>` : ''}${e.h}</h3>
+        <div class="amb-entry-body">${C.resolveParagraphs(e, ctx).map((p) => `<p>${p}</p>`).join('')}</div>
       </section>`).join('');
 
     return `
-      <header class="amb-head">
+      <header class="amb-head amb-head--${sk.head}">
         <span class="amb-head-ghost" aria-hidden="true">${ch.no}</span>
         <h2 class="amb-head-cn">${ch.cn}</h2>
         <p class="amb-head-en">${ch.en}</p>
       </header>
-      <div class="amb-entries">${entries}</div>`;
+      <div class="amb-entries amb-entries--${sk.entries}">${entries}</div>`;
   }
 
   /* --- 顶部天象：七格，点在上、星期字在下 ---
@@ -129,32 +149,28 @@
     // 整片场的状态由今天的取值决定 —— 这是本方案的核心表达
     document.body.dataset.state = ctx.todayKind || 'none';
     el.innerHTML = chapterHTML('exercise', ctx) + hudHTML(ctx);
+    afterRender();
   }
 
   function renderSleep(ctx) {
     const el = document.getElementById('sleep');
     if (!el) return;
     el.innerHTML = chapterHTML('sleep', ctx);
+    afterRender();
   }
 
   function renderNutrition(ctx) {
     const el = document.getElementById('nutrition');
     if (!el) return;
     el.innerHTML = chapterHTML('nutrition', ctx);
+    afterRender();
   }
 
-  /* 章节进入视野时极缓地浮起。默认可见，这里只加位移与透明度 */
-  function reveal() {
-    const chapters = document.querySelectorAll('.amb-chapter');
-    if (!('IntersectionObserver' in window)) return;
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        e.target.classList.add('in');
-        io.unobserve(e.target);
-      });
-    }, { threshold: 0.06, rootMargin: '0px 0px -8% 0px' });
-    chapters.forEach((c) => io.observe(c));
+  /* 三章都是整段 innerHTML 重建的，动效层手里那些元素引用当场失效 ——
+     渲染完得回头通知它一声。三个 render 各调一次，
+     由它自己合并到同一个微任务里，只实际跑一遍 */
+  function afterRender() {
+    if (window.SMN_MOTION) window.SMN_MOTION.mount();
   }
 
   window.SMN_VIEW = {
@@ -164,7 +180,6 @@
     defaultKind: 'gather',
     renderExercise,
     renderSleep,
-    renderNutrition,
-    reveal
+    renderNutrition
   };
 })();

@@ -600,8 +600,13 @@
 
   /* ============================================================
      4. 开场白编排
-     三句哲思逐句浮现 → 淡出进入主页。
-     文案与时序样式由各页自己的 CSS 定义，这里只管收场。
+     三句箴言轮流上台：逐词浮现 → 停住让人读完 → 整句退回景深 → 下一句，
+     三句演完遮罩散开，进主页。
+     时序与排版全在 CSS 里（改文案、改节奏不用动这里），这里只管收场。
+
+     整场 5.65s（三句各一遍浮出 + 停留 + 退净），比原来长了一倍，
+     所以出口更要紧：点一下、敲任意键，立刻进主页。
+     JS 整个没跑起来时也接得住 —— CSS 里还挂着一条定时兜底（7.1s）。
      ============================================================ */
 
   function initIntro(onDone) {
@@ -612,12 +617,17 @@
     const finish = () => {
       if (done) return;
       done = true;
+      window.removeEventListener('keydown', finish);
       overlay.classList.add('hide');
-      setTimeout(() => overlay.remove(), 700);
+      setTimeout(() => overlay.remove(), 1000);
       onDone();
     };
 
-    setTimeout(finish, 4800);
+    overlay.addEventListener('click', finish);
+    window.addEventListener('keydown', finish);
+
+    // 最后一句退净（--d 3.89 + --line-life 1.3 + --line-out 0.46）之后收场
+    setTimeout(finish, 5700);
   }
 
   /* ============================================================

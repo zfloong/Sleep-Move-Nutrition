@@ -1,10 +1,25 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-Hans">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>狂野生长</title>
+    <title>狂野生长 · 睡眠、运动与营养的每日记录</title>
     <meta name="description" content="睡眠 · 运动 · 营养。你不在使用一个网页，你在看一个状态 —— 采集是每日默认，施压才需要按下。">
+    <link rel="canonical" href="https://health.654519996.xyz/">
+
+    <!-- 链接预览：微信 / 飞书 / Slack / iMessage 读的都是这一组。
+         og:image 必须是绝对 URL —— 相对路径会静默地给出空白预览，
+         这是"我的链接在别人那儿显示不出来"最常见的原因 -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://health.654519996.xyz/">
+    <meta property="og:site_name" content="狂野生长">
+    <meta property="og:title" content="狂野生长 · 睡眠、运动与营养的每日记录">
+    <meta property="og:description" content="你不在使用一个网页，你在看一个状态。采集是每日默认，施压才需要按下。">
+    <meta property="og:image" content="https://health.654519996.xyz/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+
     <meta name="theme-color" content="#05070A">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -14,35 +29,41 @@
 </head>
 <body data-state="none">
 
-    <!-- 状态场：三层漂移的光 + 一次呼吸 + 两片换季色 + 颗粒。
-         整页的"季节"由 body[data-state] 决定，纯 CSS 交叉淡替，不改任何结构 -->
+    <!-- 状态场：一次呼吸 + 两片换季色 + 一层粒子 + 地平线 + 颗粒。
+         这里不再有漂移的蓝紫光球 —— 场里只该有两种颜色，
+         而它们各自得有语义：暖=施压（火焰态），冷=采集（苔原态）。
+         整页的"季节"由 body[data-state] 决定，纯 CSS 交叉淡替，不改任何结构。
+
+         粒子那一层是 canvas 而不是一堆 span：见 js/particles.js。
+         它的每一颗都带深度，换季时在暖/冷之间交叉淡替，而不是整体切换 -->
     <div class="amb-field" aria-hidden="true">
-        <span class="amb-orb amb-orb--1"></span>
-        <span class="amb-orb amb-orb--2"></span>
-        <span class="amb-orb amb-orb--3"></span>
         <span class="amb-breath"></span>
         <span class="amb-wash amb-wash--hi"></span>
         <span class="amb-wash amb-wash--gather"></span>
-        <span class="amb-embers">
-            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-        </span>
-        <span class="amb-pollens">
-            <i></i><i></i><i></i><i></i><i></i>
-        </span>
+        <canvas class="amb-veil"></canvas>
         <span class="amb-horizon"></span>
         <span class="amb-grain"></span>
     </div>
 
-    <!-- 开场：场已经在了，三句哲思从场里浮出，再散回场里 -->
-    <div class="amb-intro" id="introOverlay">
-        <div class="amb-intro-lines">
-            <p class="amb-intro-line" data-line="1">Remove the harm.</p>
-            <p class="amb-intro-line" data-line="2">Apply the stress.</p>
-            <p class="amb-intro-line" data-line="3">Let what recovers recover.</p>
+    <!-- 开场：场已经在了，三句箴言一句一句上台。
+         每一句先逐词从景深里浮出来、停住，读完再整句退回景深，下一句才起。
+         三行占**同一个格子**（grid-area: 1 / 1）完全重合 ——
+         屏幕上任何时刻只有一句话，而且位置固定、不跳。
+         左缘与正文共用同一条 --gutter，遮罩散开时版口不动。
+         点任意处（或敲任意键）跳过：文案与节奏在 CSS 里走，JS 只负责收场 -->
+    <div class="amb-intro" id="introOverlay" title="点击任意处跳过">
+        <div class="amb-intro-lockup">
+            <p class="amb-intro-line" data-line="1"><span>Remove</span><span>the</span><span>harm</span><span>.</span></p>
+            <p class="amb-intro-line" data-line="2"><span>Apply</span><span>the</span><span>stress</span><span>.</span></p>
+            <p class="amb-intro-line" data-line="3"><span>Let</span><span>what</span><span>recovers</span><span>recover</span><span>.</span></p>
         </div>
+        <span class="amb-intro-rule" aria-hidden="true"></span>
     </div>
 
     <main class="amb-page">
+        <!-- 页面唯一的一级标题。三章是并列的，各自从 h2 起；
+             这一行是给搜索与读屏的，视觉上让位给章节名 -->
+        <h1 class="vh">狂野生长 —— 睡眠、运动与营养的每日记录</h1>
         <section id="exercise" class="amb-chapter" aria-label="运动"></section>
         <section id="sleep" class="amb-chapter" aria-label="睡眠"></section>
         <section id="nutrition" class="amb-chapter" aria-label="营养"></section>
@@ -51,6 +72,10 @@
     <footer class="sync-bar" id="syncBar" hidden></footer>
 
     <script src="js/content.js"></script>
+    <!-- 动效层要排在视图之前：视图渲染完会回头通知它"DOM 重建了，重新收元素" -->
+    <script src="js/motion.js"></script>
+    <!-- 粒子层排在动效层之后：它要借那条 rAF 和那套跟随，不自己另起 -->
+    <script src="js/particles.js"></script>
     <script src="js/view-ambient.js"></script>
     <script src="js/wild.js"></script>
 </body>
