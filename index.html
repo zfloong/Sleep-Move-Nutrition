@@ -27,21 +27,15 @@
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/ambient.css">
 </head>
-<body data-state="none">
+<body data-state="none" data-font="serif" data-bg-mode="grid">
 
-    <!-- 状态场：一次呼吸 + 两片换季色 + 一层粒子 + 地平线 + 颗粒。
-         这里不再有漂移的蓝紫光球 —— 场里只该有两种颜色，
-         而它们各自得有语义：暖=施压（火焰态），冷=采集（苔原态）。
+    <!-- 状态场：一次呼吸 + 两片极简柔和换季色 + 一层粒子 + 地平线 + 颗粒。
+         场里只有两种颜色，各自有语义：暖=施压（火焰态），冷=采集（苔原态）。
          整页的"季节"由 body[data-state] 决定，纯 CSS 交叉淡替，不改任何结构。
-
-         粒子那一层是 canvas 而不是一堆 span：见 js/particles.js。
-         它的每一颗都带深度，换季时在暖/冷之间交叉淡替，而不是整体切换 -->
+         粒子那一层是 canvas（js/particles.js），纯净深邃，零多余干扰。 -->
     <div class="amb-field" aria-hidden="true">
-        <span class="amb-breath"></span>
-        <span class="amb-wash amb-wash--hi"></span>
-        <span class="amb-wash amb-wash--gather"></span>
+        <canvas class="amb-craft-canvas"></canvas>
         <canvas class="amb-veil"></canvas>
-        <span class="amb-horizon"></span>
         <span class="amb-grain"></span>
     </div>
 
@@ -78,5 +72,6 @@
     <script src="js/particles.js"></script>
     <script src="js/view-ambient.js"></script>
     <script src="js/wild.js"></script>
+    <script src="js/background-craft.js"></script>
 </body>
 </html>

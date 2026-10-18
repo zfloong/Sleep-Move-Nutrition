@@ -21,18 +21,25 @@
     accent-color: var(--ember);
     caret-color: var(--ember-lit);
 
-    --void: #05070A;
+    --void: #06080C;
 
-    --text:       rgba(236, 241, 248, 0.96);
-    --text-dim:   rgba(236, 241, 248, 0.80);
-    --text-faint: rgba(236, 241, 248, 0.56);
-    --hair:       rgba(236, 241, 248, 0.10);
-    --hair-lit:   rgba(236, 241, 248, 0.20);
+    --text:       rgba(232, 237, 245, 0.88);
+    --text-dim:   rgba(232, 237, 245, 0.70);
+    --text-faint: rgba(232, 237, 245, 0.45);
+    --hair:       rgba(232, 237, 245, 0.08);
+    --hair-lit:   rgba(232, 237, 245, 0.16);
 
-    --ember: #E08A4A;   /* 施压之火 */
-    --ember-lit: #FFB37A;
-    --moss: #4E8F72;    /* 采集之野 */
-    --moss-lit: #8FD3B0;
+    /* 施压之火：盛放太阳金与珊瑚活火（Molten Gold & Radiant Coral）—— 满载生命热量 */
+    --ember-core: #FFF0D4;
+    --ember-lit:  #FF7E2A;
+    --ember:      #E64A19;
+    --ember-deep: #8E1F14;
+
+    /* 采集之野：北欧极光与深海青岚（Nordic Aurora & Abyssal Cyan）—— 彻底告别单调纯绿与死气 */
+    --moss-core:  #A5F3FC;
+    --moss-lit:   #2DD4BF;
+    --moss:       #0F766E;
+    --moss-deep:  #082F49;
 
     /* 顶部常驻控制台（仪表轨）占掉的高度。正文靠它从顶部让位 */
     --rail-h: calc(92px + env(safe-area-inset-top, 0px));
@@ -107,51 +114,28 @@ body {
     pointer-events: none;
 }
 
-/* 唯一还在动的东西。没有它就只剩两片静态的色，空场也像在呼吸。
-
-   --fx / --fy 由动效层每帧写入（指针位置 + 速度耦合的过冲）——
-   光晕跟着指针走，指针甩得快它就多冲出去一点，停下自己收回来。
-   没有 JS 时这两个变量取回退值 0%，场就停在正中，和以前一模一样 */
-.amb-breath {
-    position: absolute;
-    inset: -8%;
-    background: radial-gradient(58% 46% at calc(50% + var(--fx, 0%)) calc(46% + var(--fy, 0%)),
-        rgba(206, 220, 244, 0.06), rgba(206, 220, 244, 0) 70%);
-    animation: breath 11s ease-in-out infinite;
-}
-
-@keyframes breath {
-    0%, 100% { transform: scale(1);    opacity: 0.75; }
-    50%      { transform: scale(1.07); opacity: 1; }
-}
-
-/* 换季色也跟着指针偏，但幅度只有呼吸光的十分之几 ——
-   这两片是"季节"，不该满场乱跑，略有一点视差就够它像一层景 */
+/* 彻底移除跟随鼠标晃动的发光色晕与手电筒光斑，告别廉价 AI 模板感 */
+.amb-breath,
 .amb-wash {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+    display: none !important;
 }
 
-.amb-wash--hi {
-    background:
-        radial-gradient(120% 78% at calc(50% + var(--fx, 0%) * 0.3) calc(108% + var(--fy, 0%) * 0.35),
-            rgba(224, 138, 74, 0.36), rgba(224, 138, 74, 0) 58%),
-        radial-gradient(78% 58% at calc(50% + var(--fx, 0%) * 0.6) calc(0% + var(--fy, 0%) * 0.5),
-            rgba(255, 180, 120, 0.11), rgba(255, 180, 120, 0) 62%);
+/* 前景环境光浸润：舒适护眼、温润微温，消除高对比度炫光 */
+body[data-state="hi"] {
+    --text:       rgba(255, 246, 238, 0.92);
+    --text-dim:   rgba(255, 246, 238, 0.74);
+    --text-faint: rgba(255, 230, 214, 0.50);
+    --hair:       rgba(230, 74, 25, 0.14);
+    --hair-lit:   rgba(255, 126, 40, 0.26);
 }
 
-.amb-wash--gather {
-    background:
-        radial-gradient(130% 84% at calc(50% + var(--fx, 0%) * 0.3) calc(106% + var(--fy, 0%) * 0.35),
-            rgba(78, 143, 114, 0.34), rgba(78, 143, 114, 0) 60%),
-        radial-gradient(88% 66% at calc(50% + var(--fx, 0%) * 0.6) calc(0% + var(--fy, 0%) * 0.5),
-            rgba(143, 211, 176, 0.09), rgba(143, 211, 176, 0) 64%);
+body[data-state="gather"] {
+    --text:       rgba(235, 248, 252, 0.92);
+    --text-dim:   rgba(235, 248, 252, 0.74);
+    --text-faint: rgba(186, 230, 245, 0.50);
+    --hair:       rgba(14, 116, 144, 0.14);
+    --hair-lit:   rgba(45, 212, 191, 0.25);
 }
-
-body[data-state="hi"]     .amb-wash--hi     { opacity: 1; }
-body[data-state="gather"] .amb-wash--gather { opacity: 1; }
 
 /* 换季那一下的冲击闪光。单独一层，不去动 breath 或 wash 的动画 ——
    借别人的关键帧来播自己的脉冲，最后一定会打架 */
@@ -162,13 +146,13 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     opacity: 0;
     pointer-events: none;
     background: radial-gradient(62% 52% at 50% 50%,
-        rgba(236, 241, 248, 0.11), rgba(236, 241, 248, 0) 72%);
+        rgba(232, 237, 245, 0.08), rgba(232, 237, 245, 0) 72%);
 }
 
 .amb-field.is-kick::after { animation: kickFlash 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
 
 @keyframes kickFlash {
-    0%   { opacity: 0.9; }
+    0%   { opacity: 0.8; }
     100% { opacity: 0; }
 }
 
@@ -184,18 +168,18 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     opacity: 0;
     transform: scale(0.02);
     background: radial-gradient(circle,
-        rgba(236, 241, 248, 0.26), rgba(236, 241, 248, 0.10) 42%, rgba(236, 241, 248, 0) 70%);
+        rgba(232, 237, 245, 0.20), rgba(232, 237, 245, 0.06) 42%, rgba(232, 237, 245, 0) 70%);
     animation: shockWave 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .amb-shock.is-hi {
     background: radial-gradient(circle,
-        rgba(255, 179, 122, 0.30), rgba(255, 179, 122, 0.11) 42%, rgba(255, 179, 122, 0) 70%);
+        rgba(243, 196, 136, 0.28) 0%, rgba(200, 106, 40, 0.14) 38%, transparent 70%);
 }
 
 .amb-shock.is-gather {
     background: radial-gradient(circle,
-        rgba(143, 211, 176, 0.28), rgba(143, 211, 176, 0.10) 42%, rgba(143, 211, 176, 0) 70%);
+        rgba(156, 224, 200, 0.26) 0%, rgba(78, 186, 146, 0.13) 38%, transparent 70%);
 }
 
 @keyframes shockWave {
@@ -302,9 +286,7 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     inset: 0;
     pointer-events: none;
     background:
-        radial-gradient(78% 52% at 50% 40%, rgba(206, 220, 244, 0.10), rgba(206, 220, 244, 0) 72%),
-        radial-gradient(122% 62% at 50% 104%, rgba(78, 143, 114, 0.17), rgba(78, 143, 114, 0) 62%),
-        radial-gradient(96% 46% at 50% -6%, rgba(255, 180, 120, 0.07), rgba(255, 180, 120, 0) 60%);
+        radial-gradient(78% 52% at 50% 45%, rgba(206, 220, 244, 0.05), rgba(206, 220, 244, 0) 72%);
 }
 
 /* 每一次落位，场跟着亮一下。四次脉冲对应三句 + 收尾那条线。
@@ -497,18 +479,32 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
    不参与阅读，也不与章节名叠在一起抢字 */
 .amb-head-ghost {
     display: block;
-    margin-bottom: -0.16em;
+    margin-bottom: -0.20em;
     font-family: var(--mono);
-    font-size: clamp(3.4rem, 10vw, 6rem);
+    font-size: clamp(4.0rem, 11vw, 7.2rem);
     font-weight: 200;
-    letter-spacing: -0.05em;
-    line-height: 0.86;
-    color: rgba(236, 241, 248, 0.14);
+    letter-spacing: -0.06em;
+    line-height: 0.82;
+    color: rgba(232, 237, 245, 0.04);
+    -webkit-text-stroke: 1px rgba(232, 237, 245, 0.14);
+    text-shadow: 0 0 24px rgba(232, 237, 245, 0.05);
+    mix-blend-mode: screen;
     pointer-events: none;
     user-select: none;
     /* 动效层每帧按"它在视口里的位置"给它写一点纵向位移（景深视差）。
        只有三个元素，先把合成层开出来，免得边滚边建 */
     will-change: transform;
+    transition: -webkit-text-stroke 0.8s var(--ease), text-shadow 0.8s var(--ease);
+}
+
+body[data-state="hi"] .amb-head-ghost {
+    -webkit-text-stroke: 1px rgba(243, 196, 136, 0.20);
+    text-shadow: 0 0 32px rgba(200, 106, 40, 0.16);
+}
+
+body[data-state="gather"] .amb-head-ghost {
+    -webkit-text-stroke: 1px rgba(156, 224, 200, 0.18);
+    text-shadow: 0 0 32px rgba(47, 140, 108, 0.14);
 }
 
 .amb-head-cn {
@@ -724,38 +720,38 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
 }
 
 .amb-week-cn {
-    font-family: var(--mono);
-    font-size: 9px;
+    font-family: var(--sans);
+    font-size: 11px;
     font-weight: 400;
-    line-height: 1;
-    letter-spacing: 0;
-    color: rgba(236, 241, 248, 0.38);
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    color: rgba(232, 237, 245, 0.45);
     transition: color 0.6s var(--ease);
 }
 
 .amb-week-cell.hi .amb-week-dot {
     background: var(--ember-lit);
-    box-shadow: 0 0 11px rgba(255, 179, 122, 0.8);
+    box-shadow: 0 0 8px rgba(229, 147, 76, 0.6);
 }
 
 .amb-week-cell.gather .amb-week-dot {
     background: var(--moss-lit);
-    box-shadow: 0 0 11px rgba(143, 211, 176, 0.75);
+    box-shadow: 0 0 8px rgba(78, 186, 146, 0.6);
 }
 
-.amb-week-cell.hi .amb-week-cn     { color: rgba(255, 179, 122, 0.86); }
-.amb-week-cell.gather .amb-week-cn { color: rgba(143, 211, 176, 0.86); }
+.amb-week-cell.hi .amb-week-cn     { color: var(--ember-lit); font-weight: 500; }
+.amb-week-cell.gather .amb-week-cn { color: var(--moss-lit); font-weight: 500; }
 
 /* 由默认态推断出来的日子：画淡一档，好让"我真的按过哪两天"跳出来 */
 .amb-week-cell.is-auto .amb-week-dot {
-    opacity: 0.42;
+    opacity: 0.40;
     box-shadow: none;
 }
 
-.amb-week-cell.is-auto .amb-week-cn { color: rgba(143, 211, 176, 0.42); }
-.amb-week-cell.is-auto.hi .amb-week-cn { color: rgba(255, 179, 122, 0.42); }
+.amb-week-cell.is-auto .amb-week-cn { color: rgba(78, 186, 146, 0.48); }
+.amb-week-cell.is-auto.hi .amb-week-cn { color: rgba(229, 147, 76, 0.48); }
 
-.amb-week-cell.is-today .amb-week-cn { color: var(--text); }
+.amb-week-cell.is-today .amb-week-cn { color: var(--text); font-weight: 500; }
 
 .amb-week-cell.is-today::before {
     content: "";
@@ -770,18 +766,19 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     pointer-events: none;
 }
 
-/* 顶部仪表轨：常驻、不隐退。实心底 + 下缘一条细线定出边界，
-   再往下接 78px 的渐隐带 —— 正文滚进来是化掉的，不是被硬切一刀 */
+/* 顶部仪表轨：轻盈通透的微光浮岛，告别厚重死板的实心黑底板 */
 .amb-dock {
     position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     grid-template-areas: "readout poles week";
     align-items: center;
-    gap: 20px;
-    padding: calc(10px + env(safe-area-inset-top, 0px)) clamp(16px, 2.6vw, 32px) 10px;
-    background: rgba(var(--deck-rgb), 0.97);
-    box-shadow: inset 0 -1px 0 var(--hair-lit);
+    gap: 24px;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) clamp(16px, 2.8vw, 36px) 12px;
+    background: rgba(6, 8, 12, 0.62);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    box-shadow: 0 1px 0 rgba(232, 237, 245, 0.06);
     pointer-events: auto;
 }
 
@@ -791,12 +788,11 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     left: 0;
     right: 0;
     top: 100%;
-    height: 78px;
+    height: 40px;
     background: linear-gradient(180deg,
-        rgba(var(--deck-rgb), 0.97) 0%,
-        rgba(var(--deck-rgb), 0.70) 28%,
-        rgba(var(--deck-rgb), 0.30) 60%,
-        rgba(var(--deck-rgb), 0) 100%);
+        rgba(6, 8, 12, 0.55) 0%,
+        rgba(6, 8, 12, 0.15) 50%,
+        transparent 100%);
     pointer-events: none;
 }
 
@@ -805,7 +801,7 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
 }
 
 .amb-state {
@@ -814,11 +810,12 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     align-items: center;
     gap: 8px;
     white-space: nowrap;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    color: var(--text-faint);
-    transition: color 0.9s var(--ease);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--text);
+    transition: color 0.6s var(--ease);
 }
 
 .amb-state-dot {
@@ -868,22 +865,24 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
 .amb-pole--hi {
     --pole: var(--ember);
     --pole-lit: var(--ember-lit);
-    --pole-line: rgba(224, 138, 74, 0.60);
-    --pole-bg: rgba(224, 138, 74, 0.14);
+    --pole-core: var(--ember-core);
+    --pole-line: rgba(200, 106, 40, 0.45);
+    --pole-bg: rgba(200, 106, 40, 0.09);
 }
 
 .amb-pole--gather {
     --pole: var(--moss);
     --pole-lit: var(--moss-lit);
-    --pole-line: rgba(78, 143, 114, 0.62);
-    --pole-bg: rgba(78, 143, 114, 0.16);
+    --pole-core: var(--moss-core);
+    --pole-line: rgba(47, 140, 108, 0.45);
+    --pole-bg: rgba(47, 140, 108, 0.09);
 }
 
 .amb-pole:hover { transform: translateY(-1px); }
 
 .amb-pole:not(.is-on):hover {
-    border-color: rgba(236, 241, 248, 0.30);
-    background: rgba(236, 241, 248, 0.09);
+    border-color: rgba(232, 237, 245, 0.22);
+    background: rgba(232, 237, 245, 0.05);
 }
 
 .amb-pole:focus-visible { outline: 2px solid var(--pole); outline-offset: 4px; }
@@ -901,7 +900,7 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    border: 1px solid rgba(236, 241, 248, 0.34);
+    border: 1px solid rgba(232, 237, 245, 0.26);
     transition: transform 0.46s var(--spring),
                 background 0.5s var(--ease),
                 border-color 0.5s var(--ease),
@@ -931,19 +930,20 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
 
 .amb-pole-text {
     white-space: nowrap;
-    font-size: 12.5px;
-    font-weight: 400;
+    font-size: 13px;
+    font-weight: 500;
     line-height: 1.35;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     color: var(--text);
 }
 
 .amb-pole-count {
     white-space: nowrap;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    color: rgba(236, 241, 248, 0.56);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    color: rgba(232, 237, 245, 0.55);
     transition: color 0.4s var(--ease);
 }
 
@@ -973,25 +973,25 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
 .amb-pole.is-done .amb-pole-check { opacity: 1; transform: none; }
 
 /* 本周已达成：名字换成那两句话，并染上这一极的色 */
-.amb-pole.is-done .amb-pole-text { color: var(--pole-lit); }
+.amb-pole.is-done .amb-pole-text { color: var(--pole-lit); font-weight: 600; }
 
 /* 今天选中的那一极：控件本身也亮起来，像开关被推到那一侧 */
 .amb-pole.is-on {
     border-color: var(--pole-line);
     background: var(--pole-bg);
-    box-shadow: 0 0 34px -10px var(--pole), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    box-shadow: 0 0 20px -6px var(--pole), inset 0 0 10px -2px var(--pole-bg);
 }
 
 .amb-pole.is-on .amb-pole-orb {
-    background: var(--pole);
+    background: radial-gradient(circle at 35% 35%, var(--pole-core) 0%, var(--pole-lit) 55%, var(--pole) 100%);
     border-color: var(--pole-lit);
-    box-shadow: 0 0 18px var(--pole);
+    box-shadow: 0 0 10px var(--pole);
     /* 被推到那一侧的小球微微涨一圈，配上 --spring 的过冲，
        读起来是"咔"地到位，而不是颜色慢慢淡过去 */
     transform: scale(1.08);
 }
 
-.amb-pole.is-on .amb-pole-count { color: var(--pole-lit); }
+.amb-pole.is-on .amb-pole-count { color: var(--pole-lit); font-weight: 500; }
 
 /* 选中那一下，从球心荡开一圈光环。
    这里刻意只碰 box-shadow、不碰 transform —— 球的 transform 已经交给
@@ -1006,10 +1006,10 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
 .amb-hint {
     margin: 0;
     font-family: var(--sans);
-    font-size: 10.5px;
-    line-height: 1.45;
-    letter-spacing: 0.06em;
-    color: rgba(236, 241, 248, 0.48);
+    font-size: 11.5px;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    color: rgba(232, 237, 245, 0.50);
 }
 
 /* ============================================================
@@ -1048,16 +1048,16 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     background: rgba(233, 238, 245, 0.34);
 }
 
-.sync-dot.ok { background: var(--moss-lit); }
-.sync-dot.error { background: var(--ember-lit); }
+.sync-dot.ok { background: var(--moss-lit); box-shadow: 0 0 8px rgba(66, 245, 176, 0.6); }
+.sync-dot.error { background: var(--ember-lit); box-shadow: 0 0 8px rgba(255, 94, 30, 0.6); }
 
 .sync-btn {
     margin-left: auto;
     appearance: none;
     padding: 5px 12px;
-    border: 1px solid rgba(233, 238, 245, 0.16);
+    border: 1px solid rgba(238, 243, 250, 0.16);
     border-radius: 999px;
-    background: rgba(233, 238, 245, 0.05);
+    background: rgba(238, 243, 250, 0.05);
     color: var(--text-dim);
     font-family: var(--sans);
     font-size: 11.5px;
@@ -1066,13 +1066,13 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     transition: border-color 0.3s, color 0.3s, background 0.3s;
 }
 
-.sync-btn:hover { border-color: rgba(233, 238, 245, 0.4); color: var(--text); }
-.sync-btn:focus-visible { outline: 2px solid rgba(233, 238, 245, 0.5); outline-offset: 2px; }
+.sync-btn:hover { border-color: rgba(238, 243, 250, 0.4); color: var(--text); }
+.sync-btn:focus-visible { outline: 2px solid rgba(238, 243, 250, 0.5); outline-offset: 2px; }
 .sync-btn.ghost { background: none; }
-.sync-btn.danger { color: rgba(255, 179, 122, 0.8); border-color: rgba(255, 179, 122, 0.26); }
+.sync-btn.danger { color: var(--ember-lit); border-color: rgba(255, 94, 30, 0.35); }
 .sync-field > .sync-btn:only-child { margin-left: 0; }
 
-.sync-line.err { color: rgba(255, 179, 122, 0.9); }
+.sync-line.err { color: var(--ember-lit); }
 
 .sync-panel {
     max-width: 1120px;
@@ -1096,7 +1096,7 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
     color: var(--ember-lit);
     padding: 4px 9px;
     border-radius: 8px;
-    background: rgba(224, 138, 74, 0.09);
+    background: rgba(255, 94, 30, 0.12);
     word-break: break-all;
 }
 
@@ -1201,3 +1201,241 @@ body[data-state="gather"] .amb-wash--gather { opacity: 1; }
    而 JS 没跑起来时页面本来就是动的，这些选择器不会有任何一帧被匹配到。
    留着就是死代码，还会让人误以为"页面支持静止态"。
    ------------------------------------------------------------ */
+
+/* ============================================================
+   左上角今日状态高级排版 (Refined State Header)
+   ============================================================ */
+.amb-state-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    line-height: 1;
+}
+
+.state-badge {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 2.5px 6px;
+    border-radius: 6px;
+    background: rgba(232, 237, 245, 0.08);
+    border: 1px solid rgba(232, 237, 245, 0.12);
+    color: var(--text-faint);
+    text-transform: uppercase;
+}
+
+body[data-state="hi"] .state-badge {
+    color: var(--ember-lit);
+    background: rgba(200, 106, 40, 0.14);
+    border-color: rgba(229, 147, 76, 0.32);
+}
+
+body[data-state="gather"] .state-badge {
+    color: var(--moss-lit);
+    background: rgba(47, 140, 108, 0.14);
+    border-color: rgba(78, 186, 146, 0.32);
+}
+
+.state-name {
+    font-weight: 550;
+    letter-spacing: 0.03em;
+    color: var(--text);
+}
+
+.state-pill {
+    font-size: 9.5px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    padding: 1.5px 5px;
+    border-radius: 4px;
+    background: rgba(232, 237, 245, 0.05);
+    color: var(--text-faint);
+    opacity: 0.75;
+}
+
+/* ============================================================
+   字体方案体系 (Typographic Palettes via body[data-font])
+   ============================================================ */
+
+/* 1. 古典宋体 / 哲思风 (Literary Serif) - 默认设定 */
+body,
+body[data-font="serif"] {
+    --sans: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "SimSun", "Playfair Display", Georgia, serif;
+}
+
+body .amb-state,
+body .amb-pole-text,
+body .amb-entry-h,
+body .amb-head-cn,
+body[data-font="serif"] .amb-state,
+body[data-font="serif"] .amb-pole-text,
+body[data-font="serif"] .amb-entry-h,
+body[data-font="serif"] .amb-head-cn {
+    font-family: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "SimSun", Georgia, serif;
+    letter-spacing: 0.05em;
+}
+
+.amb-craft-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.amb-veil {
+    z-index: 1;
+}
+
+/* ============================================================
+   人文工艺背景切换栏 (Craft Mode Switcher)
+   ============================================================ */
+.craft-mode-switcher {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99999;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(10, 14, 22, 0.92);
+    backdrop-filter: blur(22px) saturate(190%);
+    -webkit-backdrop-filter: blur(22px) saturate(190%);
+    border: 1px solid rgba(232, 237, 245, 0.16);
+    border-radius: 999px;
+    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.88), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    animation: craftSwitcherIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes craftSwitcherIn {
+    from { opacity: 0; transform: translate(-50%, 14px) scale(0.96); }
+    to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+.craft-switcher-title {
+    font-size: 11px;
+    color: var(--text-faint);
+    padding: 0 6px 0 2px;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+}
+
+.craft-btn {
+    appearance: none;
+    cursor: pointer;
+    background: rgba(232, 237, 245, 0.05);
+    border: 1px solid rgba(232, 237, 245, 0.10);
+    border-radius: 999px;
+    padding: 6px 13px;
+    color: var(--text-dim);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.craft-btn:hover {
+    background: rgba(232, 237, 245, 0.12);
+    color: var(--text);
+    border-color: rgba(232, 237, 245, 0.22);
+}
+
+.craft-btn.is-active {
+    background: rgba(255, 126, 40, 0.22);
+    border-color: var(--ember-lit);
+    color: #fff;
+    box-shadow: 0 0 16px -2px rgba(255, 126, 40, 0.45);
+    font-weight: 600;
+}
+
+body[data-state="gather"] .craft-btn.is-active {
+    background: rgba(45, 212, 191, 0.22);
+    border-color: var(--moss-lit);
+    box-shadow: 0 0 16px -2px rgba(45, 212, 191, 0.45);
+}
+
+/* 切换提示气泡 (Craft Switch Confirmation Toast) */
+.craft-toast {
+    position: fixed;
+    bottom: 74px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    z-index: 100000;
+    pointer-events: none;
+    background: rgba(12, 16, 24, 0.96);
+    border: 1px solid rgba(232, 237, 245, 0.18);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text);
+    box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.85);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.24s;
+}
+
+.craft-toast.is-show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* 人文工艺背景模式对应的底色与纸本质感配合 */
+body[data-bg-mode="charcoal"] {
+    background: #090c12 !important;
+}
+body[data-bg-mode="charcoal"] .amb-grain {
+    opacity: 0.085 !important;
+    display: block !important;
+}
+
+body[data-bg-mode="contour"] {
+    background: #06080c !important;
+}
+body[data-bg-mode="contour"] .amb-grain {
+    opacity: 0.035 !important;
+    display: block !important;
+}
+
+body[data-bg-mode="grid"] {
+    background: #05080d !important;
+}
+body[data-bg-mode="grid"] .amb-grain {
+    opacity: 0.025 !important;
+    display: block !important;
+}
+
+body[data-bg-mode="void"] {
+    background: #030406 !important;
+}
+body[data-bg-mode="void"] .amb-grain {
+    display: none !important;
+}
+
+@media (max-width: 680px) {
+    .craft-mode-switcher {
+        bottom: 14px;
+        width: calc(100vw - 24px);
+        justify-content: space-between;
+        padding: 4px;
+    }
+    .craft-switcher-title { display: none; }
+    .craft-btn { padding: 5px 8px; font-size: 10.5px; flex: 1; justify-content: center; }
+    .craft-toast { bottom: 62px; }
+}
+
+
+

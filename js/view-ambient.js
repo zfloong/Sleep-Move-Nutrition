@@ -116,11 +116,10 @@
     const short = ctx.todayKind
       ? (dayKinds[ctx.todayKind].short || dayKinds[ctx.todayKind].name)
       : '未选';
-    const word = !storageOK
-      ? '本地记录不可用'
-      : ctx.todayKind === ctx.explicitKind
-        ? `今日 · ${short}`
-        : `今日 · ${short}（默认）`;
+    const isExplicit = ctx.todayKind === ctx.explicitKind;
+    const stateHtml = !storageOK
+      ? '<span class="state-name">本地记录不可用</span>'
+      : `<span class="state-badge">今日</span><span class="state-name">${short}</span>${!isExplicit ? '<span class="state-pill">默认</span>' : ''}`;
 
     const hint = !storageOK
       ? '当前窗口不允许写入本地存储（常见于无痕模式）'
@@ -133,7 +132,8 @@
         <div class="amb-dock">
           <div class="amb-readout">
             <p class="amb-state" data-state="${ctx.todayKind || 'none'}">
-              <span class="amb-state-dot" aria-hidden="true"></span>${word}
+              <span class="amb-state-dot" aria-hidden="true"></span>
+              <span class="amb-state-content">${stateHtml}</span>
             </p>
             <p class="amb-hint">${hint}</p>
           </div>

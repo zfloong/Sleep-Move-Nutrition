@@ -64,7 +64,13 @@
     /* 掉帧时把 dt 钳在 1/30 —— 否则一次 200ms 的卡顿会把所有弹簧炸开 */
     const dt = prev ? Math.min((now - prev) / 1000, 1 / 30) : 1 / 60;
     prev = now;
-    for (const fn of subs) fn(dt);
+    for (const fn of subs) {
+      try {
+        fn(dt);
+      } catch (err) {
+        console.error('SMN_MOTION sub error:', err);
+      }
+    }
     if (subs.size) requestAnimationFrame(loop);
     else { running = false; prev = 0; }
   }
@@ -77,53 +83,9 @@
   function unsubscribe(fn) { subs.delete(fn); }
 
   /* ============================================================
-     ① 场跟随指针
-     指针位置经指数跟随落到 --fx/--fy 上，整片场的光晕跟着走。
-     再加一项速度耦合：甩得快时多冲出去一点，停下自己收回来 ——
-     这一项就是"顺"和"有劲"的差别（规范 §2）。
+     背景场与开场白（彻底移除跟随鼠标晃动的发光场，告别廉价 AI 模板感）
      ============================================================ */
   const field = document.querySelector('.amb-field');
-  let ptrX = 0, ptrY = 0, curX = 0, curY = 0, seen = false;
-
-  function onPointer(e) {
-    if (!innerWidth || !innerHeight) return;
-    seen = true;
-    ptrX = (e.clientX / innerWidth - 0.5) * 2;   /* -1 … 1 */
-    ptrY = (e.clientY / innerHeight - 0.5) * 2;
-  }
-
-  if (field) {
-    window.addEventListener('pointermove', onPointer, { passive: true });
-
-    subscribe((dt) => {
-      if (!seen) return;
-      const nx = follow(curX, ptrX, 4.5, dt);
-      const ny = follow(curY, ptrY, 4.5, dt);
-      const vx = clamp((nx - curX) / Math.max(dt, 1e-3) * 0.55, -7, 7);
-      const vy = clamp((ny - curY) / Math.max(dt, 1e-3) * 0.55, -7, 7);
-      curX = nx; curY = ny;
-      field.style.setProperty('--fx', (nx * 15 + vx).toFixed(2) + '%');
-      field.style.setProperty('--fy', (ny * 12 + vy).toFixed(2) + '%');
-    });
-  }
-
-  /* 开场那三行也跟着指针让一点：幅度只有场的一半 ——
-     字要是晃得和光一样多，读起来就散了。开场那层被移除之后就自己摘掉 */
-  const introLockup = document.querySelector('.amb-intro-lockup');
-  if (introLockup) {
-    let ix = 0, iy = 0;
-    const introSub = (dt) => {
-      if (!introLockup.isConnected) { unsubscribe(introSub); return; }
-      if (!seen) return;
-      const nx = follow(ix, ptrX * 8, 3.4, dt);
-      const ny = follow(iy, ptrY * 6, 3.4, dt);
-      if (Math.abs(nx - ix) < 0.008 && Math.abs(ny - iy) < 0.008) return;
-      ix = nx; iy = ny;
-      introLockup.style.transform =
-        `translate3d(${nx.toFixed(2)}px, ${ny.toFixed(2)}px, 0)`;
-    };
-    subscribe(introSub);
-  }
 
   /* ============================================================
      ② 换季的冲击

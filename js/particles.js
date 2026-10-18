@@ -79,24 +79,26 @@
      停止点手写成"中心亮、边缘迅速化开"，而不是线性衰减：
      线性衰减的光斑中心是糊的，读起来像绿豆，不像光。
      ------------------------------------------------------------ */
-  function sprite(rgb) {
+  /* 真正富有生命力的多光谱辐射贴图（告别单一枯黄与灰绿，注入热力与极光灵气）：
+     施压之火：暖日炽金白核 -> 盛放珊瑚杏橙 -> 玫瑰深焰
+     采集之息：极光冰青白核 -> 灵动翡翠春绿 -> 深洋青蓝 */
+  function sprite(coreRgb, midRgb, rimRgb) {
     const S = 64;
     const c = document.createElement('canvas');
     c.width = c.height = S;
     const g = c.getContext('2d');
     const grd = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
-    grd.addColorStop(0.00, 'rgba(' + rgb + ',1)');
-    grd.addColorStop(0.14, 'rgba(' + rgb + ',0.78)');
-    grd.addColorStop(0.34, 'rgba(' + rgb + ',0.28)');
-    grd.addColorStop(0.62, 'rgba(' + rgb + ',0.07)');
-    grd.addColorStop(1.00, 'rgba(' + rgb + ',0)');
+    grd.addColorStop(0.00, 'rgba(' + coreRgb + ', 0.96)');
+    grd.addColorStop(0.16, 'rgba(' + midRgb + ', 0.58)');
+    grd.addColorStop(0.44, 'rgba(' + rimRgb + ', 0.16)');
+    grd.addColorStop(1.00, 'rgba(' + rimRgb + ', 0)');
     g.fillStyle = grd;
     g.fillRect(0, 0, S, S);
     return c;
   }
 
-  const WARM = sprite('255, 179, 122');   /* 施压之火 */
-  const COOL = sprite('143, 211, 176');   /* 采集之野 */
+  const WARM = sprite('255, 245, 222', '255, 126, 40', '215, 45, 18'); /* 施压之火：盛放太阳金核活火 */
+  const COOL = sprite('185, 248, 255', '38, 210, 190', '10, 85, 120');   /* 采集之息：北欧极光冰青 -> 灵动翡翠 -> 深海琉璃 */
 
   /* ------------------------------------------------------------
      三种角色
@@ -121,7 +123,7 @@
   let parts = [];
 
   function make(role) {
-    const p = { role: role, r: 0, a0: 0, z: 0, sp: 0, seed: 0, k: 0, x: 0, y: 0, vx: 0, vy: 0 };
+    const p = { role: role, r: 0, a0: 0, z: 0, sp: 0, seed: 0, k: 0, x: 0, y: 0, vx: 0, vy: 0, trail: [], trailMax: 0 };
     seed(p);
     /* 初次铺满整屏，而不是让它们从底部/左侧慢慢涌出来 ——
        首屏那三句开场白只有五秒，等粒子漫上来，场已经散场了 */
@@ -139,6 +141,9 @@
     p.seed = Math.random() * Math.PI * 2;
     /* 贴图里能看见的那一圈约占整张的 1/5，所以绘制尺寸给 5 倍半径 */
     p.k = 5;
+    p.trail = [];
+    /* 拖尾长度配置：spark（流星火星）拖尾最长，core（主体萤火）中等，dust（背景浮灰）微弱或无 */
+    p.trailMax = (R === ROLES[2]) ? Math.round(rand(10, 16)) : (R === ROLES[1]) ? Math.round(rand(6, 11)) : 0;
   }
 
   /* 出界就绕到对面接着走，不看当前是哪种模式 ——
@@ -150,6 +155,7 @@
     else if (p.y > H + 160) { p.y = -160; p.x = Math.random() * W; }
     else return;
     p.vx = 0; p.vy = 0;
+    p.trail = [];
   }
 
   function build() {
@@ -254,16 +260,32 @@
       const p = parts[i];
       const z = p.z;
 
-      /* 基础漂移。两极的速度在这里混合，所以过渡期是"斜着飘"。
-         余烬靠 vy 上升、孢子靠 vx 横漂 —— 各自主速度差一个轴，
-         混合出来才不会互相抵消 */
-      let tx = mix * 0 + cold * (6.5 + 15 * z);
-      let ty = mix * -(13 + 27 * z) + cold * 0;
+      // 空间微涡与多频谐波流场 (Fluid Curl Turbulence)
+      const nx = p.x * 0.0016;
+      const ny = p.y * 0.0016;
+      const curl = Math.sin(nx + t * 0.45 + p.seed) * Math.cos(ny - t * 0.35)
+                 + 0.45 * Math.sin((nx + ny) * 2.2 + t * 0.8)
+                 + 0.25 * Math.cos(nx * 3.7 - t * 1.1 + p.seed * 2);
 
-      /* 摆动：余烬左右摆，孢子上下浮 */
-      const sway = Math.sin(t * 0.55 + p.seed) * (2 + 7 * z);
-      tx += mix * sway * 0.75;
-      ty += cold * sway * 0.45;
+      // 生物式游弋冲刺脉动 (Burst & Glide)
+      const burst = 0.82 + 0.42 * Math.sin(t * 1.35 + p.seed * 4.5);
+      const spd = 2.1 * burst;
+
+      // 1. 采集日（冷色）：主轴向右平行横流，受空间微涡左右轻快偏航（犹如深海发光浮游群自然蜿蜒）
+      const angleGather = curl * 0.78; // 偏角在 ±45 度之间自然蜿蜒游动
+      const vGather = (16 + 32 * z) * spd;
+      const tx_gather = Math.cos(angleGather) * vGather;
+      const ty_gather = Math.sin(angleGather) * vGather + Math.sin(t * 0.65 + p.seed * 2) * (4 + 8 * z);
+
+      // 2. 高强度日（暖色）：主轴向上垂直升腾，受热对流剧烈湍流与热浪卷曲（犹如狂烈篝火之星飞升）
+      const angleHi = -Math.PI * 0.5 + curl * 0.68; // 垂直升腾为主，受热气流向左右翻滚
+      const vHi = (22 + 42 * z) * spd;
+      const tx_hi = Math.cos(angleHi) * vHi + Math.sin(t * 0.85 + p.seed * 3) * (8 + 14 * z);
+      const ty_hi = Math.sin(angleHi) * vHi;
+
+      // 换季过渡期：由水平流体平滑弯转为垂直热涌
+      let tx = cold * tx_gather + mix * tx_hi;
+      let ty = cold * ty_gather + mix * ty_hi;
 
       /* 指针：推开 + 点亮 */
       let glow = 0;
@@ -284,9 +306,8 @@
 
       ty += air * (0.35 + z);
 
-      /* 跟手：k 只有 3.4/s，粒子才有惯性感 ——
-         调大到几十的话它们会贴着目标速度走，看起来是"轨迹"不是"飘" */
-      const k = 3.4 * p.sp;
+      /* 跟手：k 取 2.8 * p.sp，转弯带有优雅的流体惯性 */
+      const k = 2.8 * p.sp;
       p.vx = follow(p.vx, tx, k, dt);
       p.vy = follow(p.vy, ty, k, dt);
       p.x += p.vx * dt;
@@ -294,16 +315,46 @@
 
       recycle(p);
 
-      /* 明灭。下限不能压到 0 —— 粒子暗到看不见再亮起来，那是"闪"，
-         不是"呼吸"；留 0.4 的底，它才是同一颗在明暗之间浮动 */
+      // 记录历史轨迹点以生成流光尾迹
+      if (p.trailMax > 0) {
+        p.trail.unshift({ x: p.x, y: p.y });
+        if (p.trail.length > p.trailMax) p.trail.pop();
+      }
+
+      /* 明灭。下限不能压到 0 —— 留 0.4 的底，在明暗之间浮动 */
       const pulse = 0.70 + 0.30 * Math.sin(t * (0.55 + z * 1.05) + p.seed);
       let a = p.a0 * pulse * gate;
       if (glow > 0) a *= 1 + glow * 1.25;
       if (a > 1) a = 1;
       if (a < 0.004) continue;
 
-      /* 明灭时尺寸也跟着胀缩一下。只改不透明度的话，粒子是"在闪"；
-         连尺寸一起呼吸，它才是"在烧"。而这一步不需要多花任何东西 */
+      /* 绘制流光尾迹 (Comet Ribbon Trails)：沿历史轨迹向后渐窄、渐隐 */
+      if (p.trail.length >= 2) {
+        for (let j = 0; j < p.trail.length - 1; j++) {
+          const p0 = p.trail[j];
+          const p1 = p.trail[j + 1];
+          const progress = 1 - (j / p.trail.length); // 头部 1.0 -> 尾部 0.0
+          const trailAlpha = a * progress * progress * 0.72;
+          const trailWidth = Math.max(0.6, p.r * 0.85 * progress);
+
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1.x, p1.y);
+          ctx.lineWidth = trailWidth;
+          ctx.lineCap = 'round';
+
+          if (mix > 0.015) {
+            ctx.strokeStyle = `rgba(255, 126, 40, ${trailAlpha * mix})`;
+            ctx.stroke();
+          }
+          if (cold > 0.015) {
+            ctx.strokeStyle = `rgba(38, 210, 190, ${trailAlpha * cold})`;
+            ctx.stroke();
+          }
+        }
+      }
+
+      /* 绘制粒子本体光斑 */
       const s = p.r * p.k * (0.93 + 0.14 * pulse);
       const hx = p.x - s / 2, hy = p.y - s / 2;
 
@@ -315,6 +366,20 @@
       if (cold > 0.015) {
         ctx.globalAlpha = a * cold;
         ctx.drawImage(COOL, hx, hy, s, s);
+      }
+
+      /* 针对 spark 亮点粒子：叠加一颗耀目的微型星核 */
+      if (p.role === ROLES[2] && a > 0.30) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.max(0.8, p.r * 0.55), 0, Math.PI * 2);
+        if (mix > 0.015) {
+          ctx.fillStyle = `rgba(255, 250, 235, ${a * 0.95 * mix})`;
+          ctx.fill();
+        }
+        if (cold > 0.015) {
+          ctx.fillStyle = `rgba(215, 252, 255, ${a * 0.95 * cold})`;
+          ctx.fill();
+        }
       }
     }
 
