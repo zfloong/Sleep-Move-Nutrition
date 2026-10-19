@@ -149,6 +149,58 @@ if (mobileShot && mobileShot.data) {
   console.log('Saved mobile preview to:', mobPath);
 }
 
+// 恢复桌面端视口，测试云同步弹窗
+await send('Emulation.setDeviceMetricsOverride', {
+  width: 1440,
+  height: 900,
+  deviceScaleFactor: 1,
+  mobile: false
+});
+await sleep(500);
+
+console.log('Testing opening Cloud Sync Modal (empty state)...');
+await send('Runtime.evaluate', {
+  expression: `(() => {
+    const syncBtn = document.getElementById('btn-sync-toggle');
+    if (syncBtn) syncBtn.click();
+  })()`
+});
+await sleep(600);
+
+const modalShot = await send('Page.captureScreenshot', { format: 'png' });
+if (modalShot && modalShot.data) {
+  const modalPath = 'C:/Users/65451/.gemini/antigravity/brain/47509975-dbdd-4a6c-a79e-613554cb6519/whale_sync_modal.png';
+  fs.writeFileSync(modalPath, Buffer.from(modalShot.data, 'base64'));
+  console.log('Saved sync modal preview to:', modalPath);
+}
+
+// 模拟已存在同步码的情况
+console.log('Testing opening Cloud Sync Modal with existing sync key...');
+await send('Runtime.evaluate', {
+  expression: `(() => {
+    localStorage.setItem('smn_synckey', '7K9M2-VW4PX-R6T8Q-MNB3Y');
+    window.bioDashboard.syncKey = '7K9M2-VW4PX-R6T8Q-MNB3Y';
+    window.bioDashboard.openSyncModal();
+  })()`
+});
+await sleep(600);
+
+const modalActiveShot = await send('Page.captureScreenshot', { format: 'png' });
+if (modalActiveShot && modalActiveShot.data) {
+  const modalActPath = 'C:/Users/65451/.gemini/antigravity/brain/47509975-dbdd-4a6c-a79e-613554cb6519/whale_sync_modal_active.png';
+  fs.writeFileSync(modalActPath, Buffer.from(modalActiveShot.data, 'base64'));
+  console.log('Saved active sync modal preview to:', modalActPath);
+}
+
+// 恢复清空状态以保持测试环境纯净
+await send('Runtime.evaluate', {
+  expression: `(() => {
+    localStorage.removeItem('smn_synckey');
+    window.bioDashboard.syncKey = '';
+    window.bioDashboard.closeSyncModal();
+  })()`
+});
+
 ws.close();
 edge.kill();
 try {

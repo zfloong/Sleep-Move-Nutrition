@@ -1,10 +1,14 @@
 /* ============================================================
    Sleep-Move-Nutrition · 生物中枢控制器 (Bio Controller)
+   含完整 Cloudflare KV 跨设备端到端云同步系统
    ============================================================ */
 (function (global) {
   'use strict';
 
   const LS_KEY = 'smn_state';
+  const LS_SYNC_KEY = 'smn_synckey';
+  const API = '/api/state';
+  const KEY_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
   // 辅助函数：计算 ISO 周键 (如 "2026-W42")
   function getISOWeekKey(d = new Date()) {
@@ -22,6 +26,45 @@
     return (d.getDay() + 6) % 7;
   }
 
+  // 生成 20 位 Base32 同步码
+  function genSyncKey() {
+    const bytes = new Uint8Array(20);
+    if (window.crypto && crypto.getRandomValues) {
+      crypto.getRandomValues(bytes);
+    } else {
+      for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    }
+    let s = '';
+    for (const b of bytes) s += KEY_ALPHABET[b % 32];
+    return s.replace(/(.{5})/g, '$1-').replace(/-$/, '');
+  }
+
+  function keyDigits(k) {
+    return String(k || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+  }
+
+  function normalizeKey(k) {
+    return (keyDigits(k).match(/.{1,5}/g) || []).join('-');
+  }
+
+  // 双向两端合并算法：同一周同一天取时间戳 t 最大者
+  function mergeDocs(local, remote) {
+    const out = JSON.parse(JSON.stringify(local || {}));
+    Object.entries(remote || {}).forEach(([wk, days]) => {
+      const target = out[wk] || (out[wk] = {});
+      Object.entries(days || {}).forEach(([d, rec]) => {
+        if (!rec || typeof rec !== 'object') return;
+        const t = Number(rec.t) || 0;
+        const prev = target[d];
+        if (!prev || t >= (Number(prev.t) || 0)) {
+          const v = rec.v === 1 ? 1 : rec.v === 2 ? 2 : 0;
+          target[d] = { v, t };
+        }
+      });
+    });
+    return out;
+  }
+
   class BioDashboard {
     constructor() {
       this.weekKey = getISOWeekKey();
@@ -29,11 +72,22 @@
       this.stateDoc = this.loadState();
       this.quoteIdx = Math.floor(Math.random() * 12);
 
+      // 云同步状态
+      this.syncKey = this.loadSyncKey();
+      this.syncMode = 'checking'; // checking | cloud | local
+      this.syncStatus = 'idle';   // idle | syncing | ok | error
+      this.syncMsg = '';
+      this.pushTimer = null;
+
       this.initEngines();
       this.bindDOM();
+      this.bindSync();
       this.render();
+
+      this.initSync();
     }
 
+    // --- 本地存储 ---
     loadState() {
       try {
         const raw = localStorage.getItem(LS_KEY);
@@ -50,6 +104,23 @@
       } catch (e) {
         console.warn('Storage write failed:', e);
       }
+      this.schedulePush();
+    }
+
+    loadSyncKey() {
+      try {
+        return localStorage.getItem(LS_SYNC_KEY) || '';
+      } catch {
+        return '';
+      }
+    }
+
+    saveSyncKey(k) {
+      this.syncKey = k ? normalizeKey(k) : '';
+      try {
+        if (this.syncKey) localStorage.setItem(LS_SYNC_KEY, this.syncKey);
+        else localStorage.removeItem(LS_SYNC_KEY);
+      } catch {}
     }
 
     getWeekData() {
@@ -109,7 +180,6 @@
       if (this.whaleEngine) {
         this.whaleEngine.setState(kind);
       }
-      // 触发展开卡片微动态
       const badge = document.querySelector('.brand-logo-whale');
       if (badge && triggerEffect) {
         badge.style.transform = 'scale(1.22) rotate(-8deg)';
@@ -187,6 +257,289 @@
       }
     }
 
+    // --- 云同步机制 ---
+    syncHeaders() {
+      const h = { 'cache-control': 'no-cache' };
+      if (this.syncKey) h['x-sync-key'] = this.syncKey;
+      return h;
+    }
+
+    async initSync() {
+      await this.detectCloud();
+      this.updateSyncBadge();
+      if (this.syncMode === 'cloud' && this.syncKey) {
+        await this.pull();
+      }
+
+      // 切回页面或标签页时自动拉取最新
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && this.syncMode === 'cloud' && this.syncKey) {
+          this.pull();
+        }
+      });
+    }
+
+    async detectCloud() {
+      if (location.protocol === 'file:') {
+        this.syncMode = 'local';
+        this.syncMsg = '本地预览环境';
+        return;
+      }
+      try {
+        const ctl = new AbortController();
+        const timer = setTimeout(() => ctl.abort(), 6000);
+        const res = await fetch(API, { headers: this.syncHeaders(), signal: ctl.signal, cache: 'no-store' });
+        clearTimeout(timer);
+        const data = await res.json();
+        if (data && data.ok && typeof data.configured === 'boolean') {
+          this.syncMode = 'cloud';
+          return;
+        }
+        this.syncMode = 'local';
+        this.syncMsg = data?.error || '云服务未就绪';
+      } catch {
+        this.syncMode = 'local';
+        this.syncMsg = '无法连接云端';
+      }
+    }
+
+    async pull() {
+      if (this.syncMode !== 'cloud' || !this.syncKey) return;
+      this.syncStatus = 'syncing';
+      this.updateSyncBadge();
+
+      try {
+        const res = await fetch(API, { headers: this.syncHeaders(), cache: 'no-store' });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'pull failed');
+
+        const remote = data.weeks || {};
+        const local = this.stateDoc;
+        const merged = mergeDocs(local, remote);
+
+        if (JSON.stringify(merged) !== JSON.stringify(local)) {
+          this.stateDoc = merged;
+          localStorage.setItem(LS_KEY, JSON.stringify(merged));
+          this.render();
+        }
+        this.syncStatus = 'ok';
+        this.syncMsg = '已与云端同步';
+      } catch (err) {
+        this.syncStatus = 'error';
+        this.syncMsg = '拉取失败';
+        console.warn('Sync pull failed:', err);
+      }
+      this.updateSyncBadge();
+    }
+
+    async push() {
+      if (this.syncMode !== 'cloud' || !this.syncKey) return;
+      this.syncStatus = 'syncing';
+      this.updateSyncBadge();
+
+      try {
+        const res = await fetch(API, {
+          method: 'PUT',
+          headers: Object.assign({ 'content-type': 'application/json' }, this.syncHeaders()),
+          body: JSON.stringify({ weeks: this.stateDoc })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'push failed');
+
+        const local = this.stateDoc;
+        const merged = mergeDocs(local, data.weeks || {});
+        if (JSON.stringify(merged) !== JSON.stringify(local)) {
+          this.stateDoc = merged;
+          localStorage.setItem(LS_KEY, JSON.stringify(merged));
+          this.render();
+        }
+        this.syncStatus = 'ok';
+        this.syncMsg = '已保存到云端';
+      } catch (err) {
+        this.syncStatus = 'error';
+        this.syncMsg = '上传失败';
+        console.warn('Sync push failed:', err);
+      }
+      this.updateSyncBadge();
+    }
+
+    schedulePush() {
+      if (this.syncMode !== 'cloud' || !this.syncKey) return;
+      clearTimeout(this.pushTimer);
+      this.pushTimer = setTimeout(() => this.push(), 700);
+    }
+
+    bindSync() {
+      const syncBtn = document.getElementById('btn-sync-toggle');
+      const backdrop = document.getElementById('syncModalBackdrop');
+      const closeBtn = document.getElementById('btn-close-sync-modal');
+
+      if (syncBtn) {
+        syncBtn.addEventListener('click', () => this.openSyncModal());
+      }
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => this.closeSyncModal());
+      }
+      if (backdrop) {
+        backdrop.addEventListener('click', (e) => {
+          if (e.target === backdrop) this.closeSyncModal();
+        });
+      }
+    }
+
+    openSyncModal() {
+      const backdrop = document.getElementById('syncModalBackdrop');
+      if (!backdrop) return;
+      this.renderSyncModalContent();
+      backdrop.classList.add('active');
+    }
+
+    closeSyncModal() {
+      const backdrop = document.getElementById('syncModalBackdrop');
+      if (backdrop) backdrop.classList.remove('active');
+    }
+
+    renderSyncModalContent() {
+      const contentEl = document.getElementById('syncModalBody');
+      if (!contentEl) return;
+
+      const hasKey = !!this.syncKey;
+      let html = '';
+
+      if (hasKey) {
+        html = `
+          <div class="sync-modal-section">
+            <span class="sync-section-label">当前设备同步码</span>
+            <div class="sync-code-display">
+              <code class="sync-code-val" id="mySyncCode">${this.syncKey}</code>
+              <button class="sync-pill-btn" id="btn-copy-sync">复制同步码</button>
+            </div>
+            <p class="sync-tip-text">
+              在手机或其它设备上打开本网站，填入这串同步码，两端即可自动无缝合并并共享健康记录。
+            </p>
+          </div>
+
+          <div class="sync-modal-section">
+            <span class="sync-section-label">改绑其它同步码</span>
+            <div class="sync-input-row">
+              <input type="text" class="sync-text-input" id="inputOtherKey" placeholder="粘贴已有同步码 (20位)" autocomplete="off">
+              <button class="sync-pill-btn primary" id="btn-apply-other-key">绑定</button>
+            </div>
+          </div>
+
+          <div class="sync-modal-footer-actions">
+            <button class="sync-action-danger" id="btn-disable-sync">在此设备关闭云同步</button>
+            <button class="sync-pill-btn" id="btn-manual-sync">立即同步一次</button>
+          </div>
+        `;
+      } else {
+        html = `
+          <div class="sync-modal-section">
+            <span class="sync-section-label">方案 1 · 在此设备启用新同步码</span>
+            <p class="sync-tip-text">生成一串唯一的 20 位专属同步码，无需注册即可在云端安全加密存储。</p>
+            <button class="sync-pill-btn primary" id="btn-create-key">生成新同步码并开启同步</button>
+          </div>
+
+          <div class="sync-modal-divider"><span>或者</span></div>
+
+          <div class="sync-modal-section">
+            <span class="sync-section-label">方案 2 · 输入已有同步码</span>
+            <p class="sync-tip-text">若您已在手机或其它电脑上拥有同步码，请在此粘贴以连通两端：</p>
+            <div class="sync-input-row">
+              <input type="text" class="sync-text-input" id="inputOtherKey" placeholder="例如：7K9M2-VW4PX-..." autocomplete="off">
+              <button class="sync-pill-btn primary" id="btn-apply-other-key">绑定并合并</button>
+            </div>
+          </div>
+        `;
+      }
+
+      contentEl.innerHTML = html;
+
+      // 绑定模态框内部交互
+      const copyBtn = document.getElementById('btn-copy-sync');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(this.syncKey);
+            copyBtn.textContent = '已复制！';
+            setTimeout(() => { copyBtn.textContent = '复制同步码'; }, 1800);
+          } catch {
+            alert('复制失败，请手动选中复制：' + this.syncKey);
+          }
+        });
+      }
+
+      const createBtn = document.getElementById('btn-create-key');
+      if (createBtn) {
+        createBtn.addEventListener('click', async () => {
+          this.saveSyncKey(genSyncKey());
+          this.renderSyncModalContent();
+          this.updateSyncBadge();
+          await this.push();
+        });
+      }
+
+      const applyBtn = document.getElementById('btn-apply-other-key');
+      if (applyBtn) {
+        applyBtn.addEventListener('click', async () => {
+          const input = document.getElementById('inputOtherKey');
+          const raw = keyDigits(input ? input.value : '');
+          if (raw.length < 8) {
+            alert('同步码格式不正确（至少需8位）');
+            return;
+          }
+          this.saveSyncKey(normalizeKey(raw));
+          this.renderSyncModalContent();
+          this.updateSyncBadge();
+          await this.pull();
+          this.closeSyncModal();
+        });
+      }
+
+      const disableBtn = document.getElementById('btn-disable-sync');
+      if (disableBtn) {
+        disableBtn.addEventListener('click', () => {
+          if (confirm('关闭后这台设备将仅保存在本地浏览器中，不再与云端通信。确定关闭？')) {
+            this.saveSyncKey('');
+            this.syncStatus = 'idle';
+            this.renderSyncModalContent();
+            this.updateSyncBadge();
+          }
+        });
+      }
+
+      const manualBtn = document.getElementById('btn-manual-sync');
+      if (manualBtn) {
+        manualBtn.addEventListener('click', async () => {
+          manualBtn.textContent = '同步中...';
+          await this.pull();
+          await this.push();
+          manualBtn.textContent = '同步成功！';
+          setTimeout(() => { manualBtn.textContent = '立即同步一次'; }, 1500);
+        });
+      }
+    }
+
+    updateSyncBadge() {
+      const label = document.getElementById('syncStatusLabel');
+      const dot = document.querySelector('.sync-status-dot');
+      if (!label) return;
+
+      if (!this.syncKey) {
+        label.textContent = '同步码 · 未设置';
+        if (dot) dot.className = 'sync-status-dot off';
+      } else if (this.syncStatus === 'syncing') {
+        label.textContent = '云端同步中...';
+        if (dot) dot.className = 'sync-status-dot syncing';
+      } else if (this.syncStatus === 'error') {
+        label.textContent = '同步未就绪';
+        if (dot) dot.className = 'sync-status-dot err';
+      } else {
+        label.textContent = '云端已同步';
+        if (dot) dot.className = 'sync-status-dot ok';
+      }
+    }
+
     render() {
       const todayKind = this.getTodayKind();
       document.documentElement.dataset.state = todayKind;
@@ -208,7 +561,7 @@
         for (let i = 0; i < 7; i++) {
           const rec = week[i];
           const isStress = rec && rec.v === 1;
-          const isGather = rec ? rec.v === 2 : i <= this.todayIdx; // 过去或今天默认采集
+          const isGather = rec ? rec.v === 2 : i <= this.todayIdx;
           if (isStress) stressCount++;
 
           const cell = document.createElement('div');
@@ -259,6 +612,8 @@
       if (qText && !qText.textContent && quotes.length > 0) {
         qText.textContent = quotes[this.quoteIdx % quotes.length];
       }
+
+      this.updateSyncBadge();
     }
   }
 

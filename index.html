@@ -246,10 +246,11 @@
       <div class="telemetry-group">
         <div class="telemetry-item">
           <span class="telemetry-indicator"></span>
-          <span>WHALE ENGINE · 3D EDT VOLUMETRIC</span>
+          <span>WHALE ENGINE · 3D EDT</span>
         </div>
-        <div class="telemetry-item">
-          <span>CADENCE: AUTO-SYNCED</span>
+        <div class="telemetry-item sync-telemetry-item" id="btn-sync-toggle" title="点击管理跨设备云端同步码" role="button" tabindex="0">
+          <span class="sync-status-dot ok"></span>
+          <span id="syncStatusLabel">云端同步 · 检测中</span>
         </div>
       </div>
 
@@ -260,6 +261,22 @@
       </div>
     </footer>
 
+  </div>
+
+  <!-- 跨设备云同步磨砂模态窗口 -->
+  <div class="sync-modal-backdrop" id="syncModalBackdrop">
+    <div class="sync-modal-dialog">
+      <div class="sync-modal-header">
+        <div class="sync-modal-title-group">
+          <span class="sync-modal-icon">☁️</span>
+          <h3 class="sync-modal-title">跨设备云端同步 (Cloudflare KV)</h3>
+        </div>
+        <button class="sync-modal-close" id="btn-close-sync-modal" aria-label="关闭">&times;</button>
+      </div>
+      <div class="sync-modal-body" id="syncModalBody">
+        <!-- 动态渲染 -->
+      </div>
+    </div>
   </div>
 
   <!-- 脚本加载链：Three.js -> 内容数据 -> 网格引擎 -> 巨鲸引擎 -> 控制器 -->
