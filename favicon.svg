@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- 极光冰青冷极渐变（采集·睡眠·蓄能） -->
+    <linearGradient id="coolGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="35%" stop-color="#14B8A6"/>
+      <stop offset="75%" stop-color="#2DD4BF"/>
+      <stop offset="100%" stop-color="#A5F3FC"/>
+    </linearGradient>
+
+    <!-- 晨曦流金暖极渐变（施压·运动·唤醒） -->
+    <linearGradient id="warmGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C2410C"/>
+      <stop offset="35%" stop-color="#EA580C"/>
+      <stop offset="70%" stop-color="#FF7E2A"/>
+      <stop offset="92%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#FFFBEB"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 冰川冷月/潮汐之托：环抱左下与上升弧线 -->
+  <path d="M 256 50 C 142 50 50 142 50 256 C 50 370 142 462 256 462 C 350 462 430 400 456 316 C 410 352 352 376 290 376 C 174 376 82 284 82 168 C 82 120 98 76 126 38 C 164 46 208 50 256 50 Z"
+        fill="url(#coolGrad)"/>
+
+  <!-- 朝阳金核：右上生机涌动的生命之核 -->
+  <circle cx="342" cy="168" r="102" fill="url(#warmGrad)"/>
+
+  <!-- 潮汐星珠：极光晨露微光点 -->
+  <circle cx="160" cy="106" r="16" fill="#A5F3FC"/>
+</svg>
