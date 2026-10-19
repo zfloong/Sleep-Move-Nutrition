@@ -132,6 +132,14 @@ const stressEval = await send('Runtime.evaluate', {
 });
 console.log('=== After Switching to Stress State ===', stressEval.result.value);
 
+// 施压态桌面端截图
+const stressShot = await send('Page.captureScreenshot', { format: 'png' });
+if (stressShot && stressShot.data) {
+  const stressPath = 'C:/Users/65451/.gemini/antigravity/brain/47509975-dbdd-4a6c-a79e-613554cb6519/whale_stress_preview.png';
+  fs.writeFileSync(stressPath, Buffer.from(stressShot.data, 'base64'));
+  console.log('Saved stress preview to:', stressPath);
+}
+
 // 移动端排版测试 (iPhone 14 / 390x844)
 console.log('Capturing mobile view...');
 await send('Emulation.setDeviceMetricsOverride', {

@@ -459,20 +459,8 @@
     }
 
     initGalaxy() {
-      const geom = generateGalaxyData(850);
-      this.galaxyMaterial = new THREE.ShaderMaterial({
-        vertexShader: GALAXY_VS,
-        fragmentShader: GALAXY_FS,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: {
-          uTime: { value: 0 },
-          uOpacity: { value: 0.70 }
-        }
-      });
-      this.galaxyPoints = new THREE.Points(geom, this.galaxyMaterial);
-      this.scene.add(this.galaxyPoints);
+      // 纯净深海模式：不再注入杂乱的五彩星尘粒子，保持深海深邃与点线网格的纯粹美感
+      this.galaxyPoints = null;
     }
 
     initWhale() {
@@ -647,29 +635,31 @@
         );
       }
 
-      // 4. 巨鲸自主深海巡游动力学 (多频非谐运动)
-      const speed = 1.0 + this.stateIntensity * 0.85;
-      const t = elapsed * 0.25 * speed;
+      // 4. 巨鲸中央优雅悬浮动力学 (Hover Mode · 原地起伏呼吸与视差微倾)
+      // 保持巨鲸稳定处于视口中央，不漫天漂移乱窜，深邃而庄严
+      const breathBob = Math.sin(elapsed * 0.65) * 0.28;
+      const mouseParallaxX = this.mouse.hasMoved ? (this.mouse.smoothX * 0.04) : 0;
+      const mouseParallaxY = this.mouse.hasMoved ? (this.mouse.smoothY * 0.03) : 0;
 
-      // 在视口中形成优雅的无规八字/莫比乌斯游动轨迹
-      const targetX = Math.sin(t) * 4.2 + Math.cos(t * 0.5) * 1.5;
-      const targetY = Math.sin(t * 1.6) * 1.8 + Math.cos(t * 0.8) * 0.8;
-      const targetZ = Math.sin(t * 0.9) * 2.2 - 0.5;
+      // 视觉锚点：居于视口中央偏上 (约 +0.3)，完美处于节奏栏与三大支柱卡片间的黄金留白区
+      const targetX = mouseParallaxX;
+      const targetY = 0.30 + breathBob + mouseParallaxY;
+      const targetZ = 0.0;
 
-      this.swimAgent.pos.x += (targetX - this.swimAgent.pos.x) * 0.03;
-      this.swimAgent.pos.y += (targetY - this.swimAgent.pos.y) * 0.03;
-      this.swimAgent.pos.z += (targetZ - this.swimAgent.pos.z) * 0.03;
+      this.swimAgent.pos.x += (targetX - this.swimAgent.pos.x) * 0.05;
+      this.swimAgent.pos.y += (targetY - this.swimAgent.pos.y) * 0.05;
+      this.swimAgent.pos.z += (targetZ - this.swimAgent.pos.z) * 0.05;
 
       this.whaleGroup.position.copy(this.swimAgent.pos);
 
-      // 计算朝向与倾侧角
-      const dx = targetX - this.swimAgent.pos.x;
-      const dy = targetY - this.swimAgent.pos.y;
-      const heading = Math.atan2(dy, -dx); // 头部在 -X
+      // 优雅微仰俯与微横滚（保持头部朝左优雅舒展，随鼠标灵动微偏）
+      const targetRotZ = Math.sin(elapsed * 0.45) * 0.04 + (this.mouse.hasMoved ? -this.mouse.smoothX * 0.012 : 0);
+      const targetRotX = Math.sin(elapsed * 0.60) * 0.08 + (this.mouse.hasMoved ? -this.mouse.smoothY * 0.025 : 0);
+      const targetRotY = Math.cos(elapsed * 0.50) * 0.14 + (this.mouse.hasMoved ? this.mouse.smoothX * 0.035 : 0);
 
-      this.whaleGroup.rotation.z += (heading - this.whaleGroup.rotation.z) * 0.04;
-      this.whaleGroup.rotation.x = Math.sin(elapsed * 0.6) * 0.12;
-      this.whaleGroup.rotation.y = Math.cos(elapsed * 0.5) * 0.18;
+      this.whaleGroup.rotation.z += (targetRotZ - this.whaleGroup.rotation.z) * 0.05;
+      this.whaleGroup.rotation.x += (targetRotX - this.whaleGroup.rotation.x) * 0.05;
+      this.whaleGroup.rotation.y += (targetRotY - this.whaleGroup.rotation.y) * 0.05;
 
       // 宏伟尺寸
       const baseScale = Math.min(1.15, Math.max(0.75, window.innerWidth / 1200));
