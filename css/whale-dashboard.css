@@ -1,0 +1,866 @@
+/* ============================================================
+   Sleep-Move-Nutrition · 深海巨鲸生物仪表盘 (Whale Bio-HUD)
+   Inspired by DeepSeek Harness / dsh-particle-whale / dsh-plugin-backdrop
+   ============================================================ */
+
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+
+  /* 主题色系：采集（极光冰青） vs 施压（晨曦熔金） */
+  --gather-cyan: #2dd4bf;
+  --gather-glow: rgba(45, 212, 191, 0.25);
+  --gather-border: rgba(45, 212, 191, 0.35);
+
+  --stress-gold: #ff7e2a;
+  --stress-glow: rgba(255, 126, 42, 0.28);
+  --stress-border: rgba(255, 126, 42, 0.40);
+
+  /* 动态活跃主色（随状态切换） */
+  --accent-color: var(--gather-cyan);
+  --accent-glow: var(--gather-glow);
+  --accent-border: var(--gather-border);
+
+  /* 深海底色与磨砂玻璃 */
+  --bg-abyss: #04070d;
+  --card-bg: rgba(13, 19, 29, 0.62);
+  --card-bg-hover: rgba(18, 26, 40, 0.78);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --card-border-hover: rgba(255, 255, 255, 0.16);
+
+  /* 文字颜色阶梯 */
+  --text-main: #edf2f7;
+  --text-sub: #94a3b8;
+  --text-muted: #64748b;
+  --text-dim: #475569;
+
+  /* 尺寸与圆角 */
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 8px;
+  --radius-pill: 9999px;
+  --max-w: 1240px;
+}
+
+[data-state="hi"] {
+  --accent-color: var(--stress-gold);
+  --accent-glow: var(--stress-glow);
+  --accent-border: var(--stress-border);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100%;
+  background-color: var(--bg-abyss);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   1. 背景画布层：网格 + 3D 粒子巨鲸
+   ============================================================ */
+#grid-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.65;
+}
+
+#whale-stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2;
+  cursor: crosshair;
+}
+
+/* 渐晕遮罩 */
+.abyss-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(4, 7, 13, 0.65) 90%),
+              linear-gradient(to bottom, rgba(4, 7, 13, 0.8) 0%, transparent 18%, transparent 82%, rgba(4, 7, 13, 0.88) 100%);
+}
+
+/* ============================================================
+   2. 主容器与 HUD 布局
+   ============================================================ */
+.hud-wrapper {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 28px 48px;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.hud-wrapper > * {
+  pointer-events: auto;
+}
+
+/* ============================================================
+   3. 顶部导航 (Header)
+   ============================================================ */
+.hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 20px;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.hud-header:hover {
+  border-color: var(--card-border-hover);
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.brand-logo-whale {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.4s;
+}
+
+.brand-logo-whale svg {
+  width: 22px;
+  height: 22px;
+  fill: var(--accent-color);
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+  transition: fill 0.5s ease, filter 0.5s ease;
+}
+
+.brand-section:hover .brand-logo-whale {
+  transform: scale(1.10) rotate(-4deg);
+  border-color: var(--accent-border);
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.brand-badge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--accent-color);
+  border: 1px solid var(--accent-border);
+  letter-spacing: 0.5px;
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.8px;
+}
+
+/* 哲学信条药丸 */
+.credo-pill {
+  flex: 1;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.credo-pill:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.credo-pill .credo-icon {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* 状态切换两极胶囊 */
+.state-switcher {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.state-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.state-btn .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+  transition: all 0.3s;
+}
+
+.state-btn[data-kind="gather"].active {
+  background: rgba(45, 212, 191, 0.16);
+  color: var(--gather-cyan);
+  box-shadow: 0 0 16px rgba(45, 212, 191, 0.25);
+}
+
+.state-btn[data-kind="gather"].active .dot {
+  background: var(--gather-cyan);
+  opacity: 1;
+  box-shadow: 0 0 8px var(--gather-cyan);
+}
+
+.state-btn[data-kind="hi"].active {
+  background: rgba(255, 126, 42, 0.18);
+  color: var(--stress-gold);
+  box-shadow: 0 0 16px rgba(255, 126, 42, 0.3);
+}
+
+.state-btn[data-kind="hi"].active .dot {
+  background: var(--stress-gold);
+  opacity: 1;
+  box-shadow: 0 0 8px var(--stress-gold);
+}
+
+.state-btn:not(.active):hover {
+  color: var(--text-sub);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ============================================================
+   4. 中枢刻度 HUD (7-Day Cadence & Today Action)
+   ============================================================ */
+.hud-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-top: 24px;
+  gap: 24px;
+}
+
+.cadence-hud {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.cadence-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.30);
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.cadence-card:hover {
+  border-color: var(--card-border-hover);
+}
+
+/* 左侧：每周目标进度 */
+.goal-progress-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-header-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.goal-status-text {
+  margin: 12px 0 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.goal-big-num {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-main);
+  letter-spacing: -1px;
+}
+
+.goal-target-label {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.goal-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 6px;
+}
+
+.goal-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gather-cyan), var(--accent-color));
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* 中间：周一到周日 7 天刻度 */
+.cadence-week-track {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.week-days-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.day-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  position: relative;
+}
+
+.day-cell:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.day-cell.today {
+  border-color: var(--accent-border);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.day-cell.today::after {
+  content: '今';
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  font-size: 9px;
+  background: var(--accent-color);
+  color: #04070d;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+.day-name {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.day-cell.today .day-name {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.day-beacon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.day-cell[data-state="gather"] .day-beacon {
+  border-color: var(--gather-cyan);
+  background: var(--gather-cyan);
+  box-shadow: 0 0 10px var(--gather-glow);
+}
+
+.day-cell[data-state="hi"] .day-beacon {
+  border-color: var(--stress-gold);
+  background: var(--stress-gold);
+  box-shadow: 0 0 10px var(--stress-glow);
+}
+
+.day-beacon-core {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #04070d;
+}
+
+/* 右侧：今日行动决策 */
+.today-action-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-left: 2px solid var(--accent-color);
+  transition: border-color 0.4s ease;
+}
+
+.action-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-color);
+  letter-spacing: 0.5px;
+}
+
+.action-guidance-text {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text-sub);
+  margin: 8px 0;
+}
+
+.action-footer-tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.action-footer-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-size: 11.5px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0;
+}
+
+/* ============================================================
+   5. 三大生命基石 (Three Pillars Grid)
+   ============================================================ */
+.pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.pillar-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pillar-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  transition: background 0.4s;
+}
+
+.pillar-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--card-border-hover);
+  background: var(--card-bg-hover);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+.pillar-card:hover::before {
+  background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+}
+
+.pillar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pillar-id-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pillar-no {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pillar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: 0.3px;
+}
+
+.pillar-icon-glyph {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.pillar-motto {
+  font-size: 12px;
+  color: var(--accent-color);
+  font-family: var(--font-mono);
+  letter-spacing: 0.6px;
+  transition: color 0.4s;
+}
+
+.pillar-bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pillar-bullet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-sub);
+}
+
+.bullet-mark {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  margin-top: 8px;
+  flex-shrink: 0;
+  opacity: 0.8;
+  transition: background 0.4s;
+}
+
+.pillar-bullet-item strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+/* 卡片内部微型展开抽屉 */
+.pillar-drawer {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, margin 0.3s;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+.pillar-card.expanded .pillar-drawer {
+  max-height: 280px;
+  opacity: 1;
+  padding-top: 14px;
+  margin-top: 4px;
+}
+
+.pillar-expand-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: color 0.2s;
+  padding: 4px 0;
+  margin-top: -4px;
+}
+
+.pillar-expand-btn:hover {
+  color: var(--text-main);
+}
+
+.pillar-expand-btn svg {
+  width: 12px;
+  height: 12px;
+  transition: transform 0.3s ease;
+}
+
+.pillar-card.expanded .pillar-expand-btn svg {
+  transform: rotate(180deg);
+}
+
+/* ============================================================
+   6. 底部遥测与控制条 (Footer)
+   ============================================================ */
+.hud-footer {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.telemetry-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.telemetry-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.telemetry-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  box-shadow: 0 0 6px var(--accent-color);
+  animation: pulse-glow 2.5s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hud-action-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-sub);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.hud-action-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.hud-action-btn:active {
+  transform: scale(0.96);
+}
+
+/* ============================================================
+   7. 响应式适配 (Mobile & Tablet)
+   ============================================================ */
+@media (max-width: 1024px) {
+  .cadence-hud {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .pillars-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hud-wrapper {
+    padding: 16px 14px 48px;
+    gap: 16px;
+  }
+  .hud-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: var(--radius-lg);
+    gap: 10px 8px;
+    padding: 12px 14px;
+  }
+  .brand-info {
+    white-space: nowrap;
+  }
+  .brand-title {
+    white-space: nowrap;
+    display: inline-flex;
+  }
+  .brand-section {
+    order: 1;
+  }
+  .state-switcher {
+    order: 2;
+  }
+  .state-btn {
+    padding: 5px 10px;
+    font-size: 11.5px;
+    gap: 4px;
+  }
+  .credo-pill {
+    order: 3;
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+    font-size: 11.5px;
+    padding: 6px 12px;
+    margin-top: 4px;
+  }
+  .brand-sub {
+    display: none;
+  }
+  .hud-body {
+    margin-top: 14px;
+    gap: 16px;
+  }
+  .hud-footer {
+    flex-direction: column;
+    gap: 12px;
+    border-radius: var(--radius-md);
+    text-align: center;
+    padding: 14px;
+  }
+  .hud-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}

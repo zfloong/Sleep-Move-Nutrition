@@ -1,78 +1,256 @@
 <!DOCTYPE html>
-<html lang="zh-Hans">
+<html lang="zh-CN" data-state="gather">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>狂野生长 · 睡眠、运动与营养的每日记录</title>
-    <meta name="description" content="睡眠 · 运动 · 营养。你不在使用一个网页，你在看一个状态 —— 采集是每日默认，施压才需要按下。">
-    <link rel="canonical" href="https://health.654519996.xyz/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>狂野生长 · 睡眠 · 运动 · 营养</title>
+  <meta name="description" content="基于深海3D粒子巨鲸的极简健康生物中枢。去除危害，施加压力，让该修复的修复。">
 
-    <!-- 链接预览：微信 / 飞书 / Slack / iMessage 读的都是这一组。
-         og:image 必须是绝对 URL —— 相对路径会静默地给出空白预览，
-         这是"我的链接在别人那儿显示不出来"最常见的原因 -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://health.654519996.xyz/">
-    <meta property="og:site_name" content="狂野生长">
-    <meta property="og:title" content="狂野生长 · 睡眠、运动与营养的每日记录">
-    <meta property="og:description" content="你不在使用一个网页，你在看一个状态。采集是每日默认，施压才需要按下。">
-    <meta property="og:image" content="https://health.654519996.xyz/og.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta name="twitter:card" content="summary_large_image">
+  <!-- Open Graph 社交卡片 -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://health.654519996.xyz/">
+  <meta property="og:site_name" content="狂野生长">
+  <meta property="og:title" content="狂野生长 · 睡眠 · 运动 · 营养">
+  <meta property="og:description" content="去除危害，施加压力，让该修复的修复。深海两极律动系统。">
+  <meta property="og:image" content="https://health.654519996.xyz/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
 
-    <meta name="theme-color" content="#05070A">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/ambient.css">
+  <!-- 浏览器图标体系 (新一代深海生机巨鲸) -->
+  <meta name="theme-color" content="#04070d">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- 仪表盘样式 -->
+  <link rel="stylesheet" href="css/whale-dashboard.css">
 </head>
-<body data-state="none" data-font="serif" data-bg-mode="grid">
+<body>
 
-    <!-- 状态场：一次呼吸 + 两片极简柔和换季色 + 一层粒子 + 地平线 + 颗粒。
-         场里只有两种颜色，各自有语义：暖=施压（火焰态），冷=采集（苔原态）。
-         整页的"季节"由 body[data-state] 决定，纯 CSS 交叉淡替，不改任何结构。
-         粒子那一层是 canvas（js/particles.js），纯净深邃，零多余干扰。 -->
-    <div class="amb-field" aria-hidden="true">
-        <canvas class="amb-craft-canvas"></canvas>
-        <canvas class="amb-veil"></canvas>
-        <span class="amb-grain"></span>
-    </div>
+  <!-- 背景层：弹性点线网格 + 3D 粒子巨鲸引擎 -->
+  <canvas id="grid-canvas"></canvas>
+  <div id="whale-stage"></div>
+  <div class="abyss-vignette"></div>
 
-    <!-- 开场：场已经在了，三句箴言一句一句上台。
-         每一句先逐词从景深里浮出来、停住，读完再整句退回景深，下一句才起。
-         三行占**同一个格子**（grid-area: 1 / 1）完全重合 ——
-         屏幕上任何时刻只有一句话，而且位置固定、不跳。
-         左缘与正文共用同一条 --gutter，遮罩散开时版口不动。
-         点任意处（或敲任意键）跳过：文案与节奏在 CSS 里走，JS 只负责收场 -->
-    <div class="amb-intro" id="introOverlay" title="点击任意处跳过">
-        <div class="amb-intro-lockup">
-            <p class="amb-intro-line" data-line="1"><span>Remove</span><span>the</span><span>harm</span><span>.</span></p>
-            <p class="amb-intro-line" data-line="2"><span>Apply</span><span>the</span><span>stress</span><span>.</span></p>
-            <p class="amb-intro-line" data-line="3"><span>Let</span><span>what</span><span>recovers</span><span>recover</span><span>.</span></p>
+  <!-- 前景 HUD 磨砂玻璃层 -->
+  <div class="hud-wrapper">
+
+    <!-- 顶部导航条 -->
+    <header class="hud-header">
+      <div class="brand-section" title="狂野生长 · 深海脉动">
+        <div class="brand-logo-whale">
+          <svg viewBox="0 0 24 18">
+            <path d="M22.9168 1.43018C22.6713 1.31018 22.5658 1.53918 22.4223 1.65519C22.3733 1.69269 22.3318 1.74169 22.2903 1.78669C21.9317 2.1697 21.5127 2.42121 20.9657 2.39121C20.1657 2.34621 19.4827 2.59771 18.8787 3.20973C18.7502 2.45521 18.3236 2.0047 17.6746 1.71569C17.3351 1.56568 16.9916 1.41518 16.7536 1.08867C16.5876 0.856163 16.5421 0.597155 16.4591 0.341647C16.4061 0.187643 16.3536 0.0301382 16.1761 0.00363739C15.9836 -0.0263635 15.9081 0.135141 15.8326 0.270145C15.5306 0.822162 15.4136 1.43018 15.4251 2.0462C15.4516 3.43174 16.0366 4.53527 17.1991 5.3203C17.3311 5.4103 17.3651 5.5003 17.3236 5.63181C17.2441 5.90231 17.1501 6.16482 17.0671 6.43533C17.0141 6.60784 16.9351 6.64584 16.7501 6.57033C16.1121 6.30383 15.5611 5.90931 15.074 5.4328C14.2475 4.63328 13.5 3.75075 12.568 3.05973C12.349 2.89822 12.13 2.74822 11.9034 2.60522C10.9524 1.68169 12.028 0.923165 12.277 0.833162C12.5375 0.739159 12.3675 0.41615 11.5259 0.42015C10.6844 0.42365 9.91439 0.705658 8.93286 1.08117C8.78935 1.13767 8.63835 1.17867 8.48384 1.21267C7.59332 1.04367 6.66829 1.00617 5.70226 1.11517C3.88321 1.31768 2.43016 2.1777 1.36213 3.64575C0.0790928 5.4103 -0.222916 7.41536 0.146595 9.50642C0.535106 11.7105 1.66014 13.535 3.38869 14.9616C5.18125 16.4406 7.24581 17.1657 9.60138 17.0266C11.0319 16.9441 12.6245 16.7526 14.421 15.2321C14.874 15.4576 15.3496 15.5476 16.1381 15.6151C16.7456 15.6716 17.3306 15.5851 17.7836 15.4911C18.4931 15.3411 18.4441 14.6841 18.1876 14.5636C16.1081 13.595 16.5646 13.9891 16.1496 13.67C17.2061 12.42 18.8202 10.1979 19.3182 7.17235C19.3672 6.83834 19.4297 6.36783 19.4222 6.09732C19.4182 5.93231 19.4562 5.86831 19.6447 5.84931C20.1657 5.78931 20.6712 5.64681 21.1357 5.3913C22.4833 4.65528 23.0268 3.44624 23.1548 1.9972C23.1738 1.77569 23.1508 1.54668 22.9168 1.43018ZM11.1749 14.4736C9.15936 12.889 8.18184 12.3675 7.77832 12.39C7.40081 12.4125 7.46881 12.8445 7.55182 13.126C7.63882 13.404 7.75182 13.5955 7.91033 13.8396C8.01983 14.0011 8.09533 14.2411 7.80083 14.4216C7.15181 14.8231 6.02327 14.2866 5.97027 14.2601C4.65673 13.4865 3.5587 12.4655 2.78467 11.069C2.03715 9.72493 1.60314 8.28289 1.53164 6.74384C1.51264 6.37233 1.62214 6.24082 1.99215 6.17332C2.47916 6.08332 2.98118 6.06432 3.46769 6.13582C5.52476 6.43633 7.27581 7.35586 8.74385 8.8129C9.58188 9.64243 10.2159 10.634 10.8689 11.6025C11.5634 12.631 12.3105 13.611 13.262 14.4146C13.598 14.6961 13.866 14.9101 14.1225 15.0681C13.349 15.1546 12.058 15.1731 11.1749 14.4746V14.4736ZM12.141 8.25988C12.141 8.09488 12.273 7.96338 12.439 7.96338C12.4765 7.96338 12.5105 7.97088 12.541 7.98188C12.5825 7.99688 12.6205 8.01938 12.6505 8.05338C12.7035 8.10588 12.7335 8.18088 12.7335 8.25988C12.7335 8.42489 12.6015 8.55639 12.4355 8.55639C12.2695 8.55639 12.141 8.42489 12.141 8.25988ZM15.1415 9.79893C14.949 9.87793 14.7565 9.94544 14.5715 9.95294C14.2845 9.96794 13.9715 9.85143 13.8015 9.70893C13.5375 9.48742 13.3485 9.36342 13.2695 8.97691C13.2355 8.8119 13.2545 8.55639 13.2845 8.40989C13.3525 8.09438 13.277 7.89187 13.0545 7.70787C12.8735 7.55786 12.643 7.51636 12.39 7.51636C12.2955 7.51636 12.209 7.47486 12.1445 7.44136C12.039 7.38886 11.9519 7.25735 12.035 7.09585C12.0615 7.04335 12.19 6.91584 12.22 6.89334C12.5635 6.69784 12.9595 6.76184 13.326 6.90834C13.6655 7.04735 13.9225 7.30236 14.292 7.66287C14.6695 8.09838 14.7375 8.21838 14.9525 8.54539C15.1225 8.8009 15.277 9.06341 15.3831 9.36392C15.4471 9.55142 15.3641 9.70493 15.1415 9.79893Z"/>
+          </svg>
         </div>
-        <span class="amb-intro-rule" aria-hidden="true"></span>
-    </div>
+        <div class="brand-info">
+          <span class="brand-title">狂野生长 <span class="brand-badge">DEEP WHALE</span></span>
+          <span class="brand-sub">SLEEP · MOVE · NUTRITION</span>
+        </div>
+      </div>
 
-    <main class="amb-page">
-        <!-- 页面唯一的一级标题。三章是并列的，各自从 h2 起；
-             这一行是给搜索与读屏的，视觉上让位给章节名 -->
-        <h1 class="vh">狂野生长 —— 睡眠、运动与营养的每日记录</h1>
-        <section id="exercise" class="amb-chapter" aria-label="运动"></section>
-        <section id="sleep" class="amb-chapter" aria-label="睡眠"></section>
-        <section id="nutrition" class="amb-chapter" aria-label="营养"></section>
+      <!-- 核心信条药丸 -->
+      <div class="credo-pill" title="点击轮播下一句生命哲思">
+        <span class="credo-icon">✦</span>
+        <span class="credo-text">生命需要间歇性剧烈压力，而非绝对稳定。追求恒定只会变脆弱。</span>
+      </div>
+
+      <!-- 今日两极状态切换 -->
+      <div class="state-switcher" role="group" aria-label="今日两极状态">
+        <button class="state-btn active" data-kind="gather" title="每日默认：模拟原始人平静采集，悠闲漫步">
+          <span class="dot"></span>
+          <span>采集日 · 蓄力</span>
+        </button>
+        <button class="state-btn" data-kind="hi" title="突破稳态：高阻力短时极限刺激，破坏与重建">
+          <span class="dot"></span>
+          <span>施压日 · 突破</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 中枢主舞台 -->
+    <main class="hud-body">
+
+      <!-- 一周刻度 & 今日决策卡片 -->
+      <section class="cadence-hud">
+
+        <!-- 每周施压完成进度 -->
+        <div class="cadence-card goal-progress-box">
+          <div class="card-header-label">
+            <span>WEEKLY CADENCE</span>
+            <span>目标 2 次</span>
+          </div>
+          <div class="goal-status-text">
+            <span class="goal-big-num">0/2</span>
+            <span class="goal-target-label">本周施压</span>
+          </div>
+          <div class="goal-bar-track">
+            <div class="goal-bar-fill" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- 7-Day 轨迹 -->
+        <div class="cadence-card cadence-week-track">
+          <div class="card-header-label">
+            <span>SEVEN-DAY RHYTHM</span>
+            <span>周一 至 周日 · 点击直接补记</span>
+          </div>
+          <div class="week-days-row">
+            <!-- 动态生成 7 天 -->
+          </div>
+        </div>
+
+        <!-- 今日直接行动准则 -->
+        <div class="cadence-card today-action-card">
+          <div class="action-status-badge">🌱 采集日 · 静息蓄力</div>
+          <p class="action-guidance-text">
+            今天是有机修复与能量积累的一天。进行 1-2 小时低强度悠闲漫步，摄入充足全营养与水分，在黑暗凉爽深海中让副交感神经掌舵。
+          </p>
+          <div class="action-footer-tip">
+            <span>底座：采集自动成立</span>
+            <button class="action-footer-btn" onclick="document.querySelector('.state-btn:not(.active)').click()">一键翻转状态</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 三大生命基石交互卡片 -->
+      <section class="pillars-grid">
+
+        <!-- 01 运动 -->
+        <article class="pillar-card">
+          <div class="pillar-top">
+            <div class="pillar-id-group">
+              <span class="pillar-no">01</span>
+              <h2 class="pillar-title">运动 · 极地巡游</h2>
+            </div>
+            <span class="pillar-icon-glyph">🏃</span>
+          </div>
+          <div class="pillar-motto">Apply the stress · 施加适度剧烈压力</div>
+          <ul class="pillar-bullets">
+            <li class="pillar-bullet-item">
+              <span class="bullet-mark"></span>
+              <span><strong>两极杠铃：</strong>极高强度冲击配以极长时间悠闲，绝不进行匀速中庸消耗。</span>
+            </li>
+            <li class="pillar-bullet-item">
+              <span class="bullet-mark"></span>
+              <span><strong>底座漫步：</strong>每天 1-2 小时无压力行走，模拟原始采集，滋养关节与淋巴。</span>
+            </li>
+            <li class="pillar-bullet-item">
+              <span class="bullet-mark"></span>
+              <span><strong>间歇超量：</strong>每周仅需 1-2 次力竭性大阻力，向线粒体发出新生信号。</span>
+            </li>
+          </ul>
+          <button class="pillar-expand-btn">
+            <span class="expand-text">展开关键准则</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="pillar-drawer">
+            史前人类从无机械定量的健身房日程。真正的反脆弱来自极端两级的拉扯：平时是极其放松的低心率漫游，一旦遇到猎物或危险则全速爆发。避免长时间中等强度的慢性疲劳积累。
+          </div>
+        </article>
+
+        <!-- 02 睡眠 -->
+        <article class="pillar-card">
+          <div class="pillar-top">
+            <div class="pillar-id-group">
+              <span class="pillar-no">02</span>
+              <h2 class="pillar-title">睡眠 · 深海静息</h2>
+            </div>
+            <span class="pillar-icon-glyph">😴</span>
+          </div>
+          <div class="pillar-motto">Let what recovers recover · 让该修复的修复</div>
+          <ul class="pillar-bullets">
+            <li class="pillar-bullet-item">
+              <span class="bullet-mark"></span>
+              <span><strong>自然节律：</strong>由内在昼夜节律主导，晨起沐浴 15 分钟自然光校准褪黑素时钟。</span>
+            </li>
+            <li class="pillar-bullet-item">
+              <span class="bullet-mark"></span>
+              <span><strong>无忧而眠：</strong>质量胜于硬性时长。解除对 8 小时的数字焦虑，困了睡，醒了起。</span>
+            </li>
+            <li class="pillar-bullet-item">
+              <span class="bullet-mark"></span>
+              <span><strong>偶发剥夺：</strong>偶发失眠是系统抗脆弱训练，白天不强迫长睡，深层修复自会归来。</span>
+            </li>
+          </ul>
+          <button class="pillar-expand-btn">
+            <span class="expand-text">展开关键准则</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="pillar-drawer">
+            大脑在深度慢波睡眠期间由类淋巴系统启动脑脊液脉动冲刷代谢毒素（包括β淀粉样蛋白）。睡前 2 小时停止摄入冷白强光与过量蓝光，为身体营造如同深海一般的宁静黑暗与凉爽。
+          </div>
+        </article>
+
+        <!-- 03 营养 -->
+        <article class="pillar-card">
+          <div class="pillar-top">
+            <div class="pillar-id-group">
+              <span class="pillar-no">03</span>
+              <h2 class="pillar-title">营养 · 纯净补给</h2>
+            </div>
+            <span class="pillar-icon-glyph">🌱</span>
+          </div>
+          <div class="pillar-motto">Remove the harm · 去除现代人为危害</div>
+          <ul class="pillar-bullets">
+            <li class="pillar-bullet-item">
+              <span class="bullet-mark"></span>
+              <span><strong>零超加工：</strong>坚决剔除工业种子油、高果糖浆、人工乳化剂与化学添加物。</span>
+            </li>
+            <li class="pillar-bullet-item">
+              <span class="bullet-mark"></span>
+              <span><strong>千年饮品：</strong>只喝人类文明进化验证过的天然液体：纯净水、黑咖啡、原叶茶。</span>
+            </li>
+            <li class="pillar-bullet-item">
+              <span class="bullet-mark"></span>
+              <span><strong>饥饱本能：</strong>不数卡路里，不按钟表机械进食。植物常规，偶尔大啖优质肉类与骨髓。</span>
+            </li>
+          </ul>
+          <button class="pillar-expand-btn">
+            <span class="expand-text">展开关键准则</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="pillar-drawer">
+            现代健康危机本质上是「化学超加工食物」与人类石器时代基因的错位冲突。先做减法：去除危害物质远比盲目吃各种补剂重要得多。偶尔让肠胃空置 14-16 小时，激发细胞自噬清理机制。
+          </div>
+        </article>
+
+      </section>
+
     </main>
 
-    <footer class="sync-bar" id="syncBar" hidden></footer>
+    <!-- 底部遥测与微控条 -->
+    <footer class="hud-footer">
+      <div class="telemetry-group">
+        <div class="telemetry-item">
+          <span class="telemetry-indicator"></span>
+          <span>WHALE ENGINE · 3D EDT VOLUMETRIC</span>
+        </div>
+        <div class="telemetry-item">
+          <span>CADENCE: AUTO-SYNCED</span>
+        </div>
+      </div>
 
-    <script src="js/content.js"></script>
-    <!-- 动效层要排在视图之前：视图渲染完会回头通知它"DOM 重建了，重新收元素" -->
-    <script src="js/motion.js"></script>
-    <!-- 粒子层排在动效层之后：它要借那条 rAF 和那套跟随，不自己另起 -->
-    <script src="js/particles.js"></script>
-    <script src="js/view-ambient.js"></script>
-    <script src="js/wild.js"></script>
-    <script src="js/background-craft.js"></script>
+      <div class="hud-actions">
+        <button class="hud-action-btn" id="btn-poke" title="施加力场惊散粒子，观察自愈重组">惊动星海 / POKE</button>
+        <button class="hud-action-btn" id="btn-next-credo" title="切换哲思">下一哲思</button>
+        <button class="hud-action-btn" id="btn-fullscreen" title="全屏沉浸">全屏沉浸</button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- 脚本加载链：Three.js -> 内容数据 -> 网格引擎 -> 巨鲸引擎 -> 控制器 -->
+  <script src="js/three.min.js"></script>
+  <script src="js/content.js"></script>
+  <script src="js/grid-engine.js"></script>
+  <script src="js/whale-engine.js"></script>
+  <script src="js/bio-controller.js"></script>
+
 </body>
 </html>
