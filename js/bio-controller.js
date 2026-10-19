@@ -238,6 +238,53 @@
           }
         });
       });
+
+      // 视口尺寸变化时重新计算跑马灯
+      window.addEventListener('resize', () => this.checkCredoOverflow(), { passive: true });
+    }
+
+    updateCredo(text) {
+      const track = document.querySelector('.credo-track');
+      const textEl = document.querySelector('.credo-text');
+      const dupEl = document.querySelector('.credo-text-dup');
+      const viewport = document.querySelector('.credo-viewport');
+      if (!track || !textEl || !viewport) return;
+
+      track.style.opacity = '0';
+      setTimeout(() => {
+        textEl.textContent = text;
+        if (dupEl) dupEl.textContent = text;
+
+        track.classList.remove('is-scrolling');
+        void track.offsetWidth; // 触发 reflow
+
+        const isOverflow = textEl.scrollWidth > (viewport.clientWidth - 12);
+        if (isOverflow) {
+          const distance = textEl.scrollWidth + 48;
+          const duration = Math.max(14, Math.round(distance / 28));
+          track.style.setProperty('--marquee-duration', `${duration}s`);
+          track.classList.add('is-scrolling');
+        }
+
+        track.style.opacity = '1';
+      }, 180);
+    }
+
+    checkCredoOverflow() {
+      const track = document.querySelector('.credo-track');
+      const textEl = document.querySelector('.credo-text');
+      const viewport = document.querySelector('.credo-viewport');
+      if (!track || !textEl || !viewport) return;
+
+      const isOverflow = textEl.scrollWidth > (viewport.clientWidth - 12);
+      if (isOverflow && !track.classList.contains('is-scrolling')) {
+        const distance = textEl.scrollWidth + 48;
+        const duration = Math.max(14, Math.round(distance / 28));
+        track.style.setProperty('--marquee-duration', `${duration}s`);
+        track.classList.add('is-scrolling');
+      } else if (!isOverflow && track.classList.contains('is-scrolling')) {
+        track.classList.remove('is-scrolling');
+      }
     }
 
     cycleQuote() {
@@ -247,14 +294,7 @@
         '超补偿原理：身体的进化逻辑是破坏 - 重建 - 更强。'
       ];
       this.quoteIdx = (this.quoteIdx + 1) % quotes.length;
-      const qText = document.querySelector('.credo-text');
-      if (qText) {
-        qText.style.opacity = '0';
-        setTimeout(() => {
-          qText.textContent = quotes[this.quoteIdx];
-          qText.style.opacity = '1';
-        }, 200);
-      }
+      this.updateCredo(quotes[this.quoteIdx]);
     }
 
     // --- 云同步机制 ---
@@ -606,11 +646,13 @@
         if (actionText) actionText.innerHTML = '今天是有机修复与能量积累的一天。进行 1-2 小时低强度悠闲漫步，摄入充足全营养与水分，在黑暗凉爽深海中让副交感神经掌舵。';
       }
 
-      // 5. 哲思信条
-      const qText = document.querySelector('.credo-text');
-      const quotes = (global.SMN_CONTENT && global.SMN_CONTENT.DAILY_QUOTES) || [];
-      if (qText && !qText.textContent && quotes.length > 0) {
-        qText.textContent = quotes[this.quoteIdx % quotes.length];
+      // 5. 哲思信条跑马灯初始化
+      if (!this.initialCredoSet) {
+        this.initialCredoSet = true;
+        const quotes = (global.SMN_CONTENT && global.SMN_CONTENT.DAILY_QUOTES) || [];
+        if (quotes.length > 0) {
+          this.updateCredo(quotes[this.quoteIdx % quotes.length]);
+        }
       }
 
       this.updateSyncBadge();
